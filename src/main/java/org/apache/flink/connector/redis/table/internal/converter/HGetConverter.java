@@ -60,22 +60,19 @@ public class HGetConverter extends BaseRedisCommandToRowConverter{
 
     @Override
     protected void dataPojo(GenericRowData rowData, List<String> columnNameList, List<DataType> columnDataTypeList, DataResult dataResult, Object deserialize) throws Exception{
-        int position;
         Class<?> deserializeClass = deserialize.getClass();
         int prePosition = columnNameList.size() - deserializeClass.getDeclaredFields().length;
-        if (prePosition == 1) {
-            position = 1;
+        if (prePosition == 0) {
+            // 没有key和field信息
+        } else if (prePosition == 1) {
             rowData.setField(0, dataResult.getField());
-            rowData.setField(1, RedisDataToTableDataConverter.convert(columnDataTypeList.get(1).getLogicalType(), deserialize));
         } else if (prePosition == 2) {
-            position = 2;
             rowData.setField(0, dataResult.getKey());
             rowData.setField(1, dataResult.getField());
-            rowData.setField(2, RedisDataToTableDataConverter.convert(columnDataTypeList.get(1).getLogicalType(), deserialize));
         } else {
             throw new RuntimeException("不正确的字段个数");
         }
-        for (int i = position; i < columnNameList.size(); i++) {
+        for (int i = prePosition; i < columnNameList.size(); i++) {
             String columnName = columnNameList.get(i);
             DataType columnDataType = columnDataTypeList.get(i);
             Field field = deserializeClass.getDeclaredField(columnName);

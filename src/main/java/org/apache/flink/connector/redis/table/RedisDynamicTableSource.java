@@ -5,17 +5,9 @@ import org.apache.flink.connector.redis.table.internal.options.RedisLookupOption
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.catalog.ResolvedSchema;
-import org.apache.flink.table.connector.ChangelogMode;
 import org.apache.flink.table.connector.source.DynamicTableSource;
 import org.apache.flink.table.connector.source.LookupTableSource;
-//import org.apache.flink.table.connector.source.ScanTableSource;
 import org.apache.flink.table.connector.source.TableFunctionProvider;
-//import org.apache.flink.table.connector.source.abilities.SupportsLimitPushDown;
-//import org.apache.flink.table.connector.source.abilities.SupportsProjectionPushDown;
-import org.apache.flink.table.types.logical.RowType;
-import org.apache.flink.util.Preconditions;
-
-import java.util.List;
 
 /**
  * <p>Redis动态表资源
@@ -32,9 +24,7 @@ public class RedisDynamicTableSource implements LookupTableSource {
     /**
      * {@link TableSchema}过时了
      */
-    private ResolvedSchema physicalSchema;
-
-    private long limit = -1;
+    private final ResolvedSchema physicalSchema;
 
     public RedisDynamicTableSource(RedisConnectionOptions options, RedisReadOptions readOptions, RedisLookupOptions lookupOptions, ResolvedSchema physicalSchema) {
         this.connectionOptions = options;

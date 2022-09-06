@@ -64,7 +64,12 @@ public class JedisMasterSlaveCommand implements RedisCommand {
         return sendCommand(jedis -> jedis.hget(key, field), false);
     }
 
-    private byte[] sendCommand(Function<Jedis, byte[]> function, boolean write) {
+    @Override
+    public List<byte[]> lrange(byte[] key) {
+        return sendCommand(jedis -> jedis.lrange(key, 0, jedis.llen(key)), false);
+    }
+
+    private <T> T sendCommand(Function<Jedis, T> function, boolean write) {
         if (masterJedisPool == null || slaveJedisPool.isEmpty()) {
             synchronized (JedisMasterSlaveCommand.class) {
                 if (masterJedisPool == null || slaveJedisPool.isEmpty()) {

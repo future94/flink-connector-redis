@@ -31,4 +31,19 @@ public interface RedisCommandToRowConverter {
      * @throws Exception            转换失败
      */
     Optional<GenericRowData> convert(final RedisCommand redisCommand, final List<String> columnNameList, final List<DataType> columnDataTypeList, final RedisReadOptions readOptions, final Object[] keys) throws Exception;
+
+    /**
+     * 清除所有缓存
+     */
+    void clearCache();
+
+    /**
+     * 初始化缓存
+     * @param redisCommand          运行环境
+     * @param readOptions           读取参数配置
+     * @param columnNameList        字段名集合
+     * @param columnDataTypeList    读取参数配置
+     * @throws Exception            初始化失败
+     */
+    void loadCache(RedisCommand redisCommand, RedisReadOptions readOptions, List<String> columnNameList, List<DataType> columnDataTypeList) throws Exception;
 }

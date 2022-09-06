@@ -9,8 +9,10 @@ import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.binary.BinaryStringData;
 import org.apache.flink.table.types.DataType;
 
-import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.List;
+
+import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.HASH_KEY;
 
 /**
  * <p>HGET命令转换方式
@@ -32,7 +34,7 @@ public class HGetConverter extends BaseRedisCommandToRowConverter{
             BinaryStringData field;
             if (StringUtils.isBlank(hashKey)) {
                 if (keys.length != 2) {
-                    throw new RuntimeException("hget连表查询ON条件数量错误，您可以指定hash.key配置或者传递正确的条件");
+                    throw new RuntimeException("hget联表查询ON条件数量错误，您可以指定" + HASH_KEY.key() + "配置或者传递正确的条件");
                 }
                 key = (BinaryStringData) keys[0];
                 field = (BinaryStringData) keys[1];
@@ -40,7 +42,7 @@ public class HGetConverter extends BaseRedisCommandToRowConverter{
                 key = BinaryStringData.fromString(hashKey);
                 field = (BinaryStringData) keys[0];
             }
-            return DataResult.builder().key(key).field(field).payload(redis.hget(keySerializer.serialize(key), keySerializer.serialize(field))).build();
+            return DataResult.builder().key(key).field(field).payload(Collections.singletonList(redis.hget(keySerializer.serialize(key), keySerializer.serialize(field)))).build();
         };
     }
 
@@ -72,12 +74,6 @@ public class HGetConverter extends BaseRedisCommandToRowConverter{
         } else {
             throw new RuntimeException("不正确的字段个数");
         }
-        for (int i = prePosition; i < columnNameList.size(); i++) {
-            String columnName = columnNameList.get(i);
-            DataType columnDataType = columnDataTypeList.get(i);
-            Field field = deserializeClass.getDeclaredField(columnName);
-            field.setAccessible(true);
-            rowData.setField(i, RedisDataToTableDataConverter.convert(columnDataType.getLogicalType(), field.get(deserialize)));
-        }
+        genRowData(rowData, columnNameList, columnDataTypeList, deserialize, deserializeClass, prePosition);
     }
 }

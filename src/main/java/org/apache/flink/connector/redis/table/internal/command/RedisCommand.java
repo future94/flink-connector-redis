@@ -3,6 +3,7 @@ package org.apache.flink.connector.redis.table.internal.command;
 import org.apache.flink.connector.redis.table.internal.options.RedisConnectionOptions;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * <p>运行redis命令
@@ -36,4 +37,11 @@ public interface RedisCommand extends Serializable {
      * @return      未序列化的值
      */
     byte[] hget(byte[] key, byte[] field);
+
+    /**
+     * 运行lrange命令
+     * @param key   序列化后的键
+     * @return      未序列化的值
+     */
+    List<byte[]> lrange(byte[] key);
 }

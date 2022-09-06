@@ -4,9 +4,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.flink.connector.redis.table.internal.enums.CacheMissModel;
+import org.apache.flink.connector.redis.table.internal.enums.CacheLoadModel;
+import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
 import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
 
 import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
 
 /**
  * <p>Redis读取配置
@@ -24,5 +29,16 @@ public class RedisReadOptions implements Serializable {
 
     private RedisSerializer<?> valueSerializer;
 
+    private RedisCommandType command;
+
     private String hashKey;
+
+    private String listKey;
+
+    private Map<String, String> cacheFieldNames;
+
+    private CacheLoadModel cacheLoadModel;
+
+    private CacheMissModel cacheMissModel;
+
 }

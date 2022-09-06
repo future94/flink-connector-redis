@@ -1,10 +1,11 @@
 package org.apache.flink.connector.redis.table;
 
+import lombok.SneakyThrows;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
 import org.apache.flink.connector.redis.table.internal.command.RedisCommandBuilder;
 import org.apache.flink.connector.redis.table.internal.converter.RedisCommandToRowConverterLoader;
-import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
+import org.apache.flink.connector.redis.table.internal.enums.CacheLoadModel;
 import org.apache.flink.connector.redis.table.internal.options.RedisConnectionOptions;
 import org.apache.flink.connector.redis.table.internal.options.RedisLookupOptions;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
@@ -24,16 +25,27 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 @Internal
 public class RedisRowDataLookupFunction extends TableFunction<RowData> {
 
+    /**
+     * 动态表字段名集合
+     */
     private final List<String> columnNameList;
 
+    /**
+     * 动态表字段类型集合
+     */
     private final List<DataType> columnDataTypeList;
 
-    private final RedisCommandType redisCommandType;
-
+    /**
+     * Redis运行环境
+     */
     private final RedisCommand redisCommand;
 
+    /**
+     * 读取参数配置
+     */
     private final RedisReadOptions readOptions;
 
+    @SneakyThrows
     public RedisRowDataLookupFunction(RedisConnectionOptions connectionOptions, RedisReadOptions readOptions, RedisLookupOptions lookupOptions, ResolvedSchema physicalSchema) {
         checkNotNull(connectionOptions, "No RedisConnectionOptions supplied.");
         checkNotNull(readOptions, "No readOptions supplied.");
@@ -45,14 +57,16 @@ public class RedisRowDataLookupFunction extends TableFunction<RowData> {
         if (columnNameList.size() != columnDataTypeList.size()) {
             throw new RuntimeException("字段信息获取失败");
         }
-        this.redisCommandType = connectionOptions.getCommand();
         this.redisCommand = RedisCommandBuilder.build(connectionOptions);
+        if (CacheLoadModel.INITIAL.equals(readOptions.getCacheLoadModel())) {
+            RedisCommandToRowConverterLoader.get(readOptions.getCommand()).loadCache(redisCommand, readOptions, columnNameList, columnDataTypeList);
+        }
     }
 
     /**
-     * 连表的时候，on的条件有一个，这里的key[]就是几个
+     * 联表的时候，on的条件有一个，这里的key[]就是几个
      */
     public void eval(Object... keys) throws Exception {
-        RedisCommandToRowConverterLoader.get(redisCommandType).convert(redisCommand, columnNameList, columnDataTypeList, readOptions, keys).ifPresent(this::collect);
+        RedisCommandToRowConverterLoader.get(readOptions.getCommand()).convert(redisCommand, columnNameList, columnDataTypeList, readOptions, keys).ifPresent(this::collect);
     }
 }

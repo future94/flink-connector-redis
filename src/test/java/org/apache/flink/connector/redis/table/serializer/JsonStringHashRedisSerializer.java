@@ -10,9 +10,9 @@ import java.nio.charset.StandardCharsets;
 /**
  * @author weilai
  */
-public class JsonRedisSerializer implements RedisSerializer<JsonTestDTO> {
+public class JsonStringHashRedisSerializer implements RedisSerializer<JsonStringHashTestDTO> {
 
-    private static final String IDENTIFIER = "json";
+    private static final String IDENTIFIER = "jsonStringHash";
 
     @Override
     public String identifier() {
@@ -25,7 +25,7 @@ public class JsonRedisSerializer implements RedisSerializer<JsonTestDTO> {
     }
 
     @Override
-    public JsonTestDTO deserialize(byte[] bytes) throws SerializationException {
-        return new Gson().fromJson(new String(bytes, StandardCharsets.UTF_8), JsonTestDTO.class);
+    public JsonStringHashTestDTO deserialize(byte[] bytes) throws SerializationException {
+        return new Gson().fromJson(new String(bytes, StandardCharsets.UTF_8), JsonStringHashTestDTO.class);
     }
 }

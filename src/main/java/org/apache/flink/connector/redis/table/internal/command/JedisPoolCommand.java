@@ -7,6 +7,7 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -46,11 +47,16 @@ public class JedisPoolCommand implements RedisCommand{
     }
 
     @Override
+    public List<byte[]> lrange(byte[] key) {
+        return sendCommand(jedis -> jedis.lrange(key, 0, jedis.llen(key)));
+    }
+
+    @Override
     public byte[] hget(byte[] key, byte[] field) {
         return sendCommand(jedis -> jedis.hget(key, field));
     }
 
-    private byte[] sendCommand(Function<Jedis, byte[]> function) {
+    private <T> T sendCommand(Function<Jedis, T> function) {
         if (jedisPool == null) {
             synchronized (JedisPoolCommand.class) {
                 if (jedisPool == null) {

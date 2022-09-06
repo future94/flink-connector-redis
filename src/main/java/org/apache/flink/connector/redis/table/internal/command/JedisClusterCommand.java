@@ -19,7 +19,7 @@ import java.util.function.Function;
 @Slf4j
 public class JedisClusterCommand implements RedisCommand{
 
-    private transient JedisCluster jedisCluster;
+    private transient volatile JedisCluster jedisCluster;
 
     private final RedisConnectionOptions options;
 
@@ -57,7 +57,12 @@ public class JedisClusterCommand implements RedisCommand{
         return sendCommand(jedisCluster -> jedisCluster.hget(key, field));
     }
 
-    private byte[] sendCommand(Function<JedisCluster, byte[]> function) {
+    @Override
+    public List<byte[]> lrange(byte[] key) {
+        return sendCommand(jedisCluster -> jedisCluster.lrange(key, 0, jedisCluster.llen(key)));
+    }
+
+    private <T> T sendCommand(Function<JedisCluster, T> function) {
         if (jedisCluster == null) {
             synchronized (JedisClusterCommand.class) {
                 if (jedisCluster == null) {

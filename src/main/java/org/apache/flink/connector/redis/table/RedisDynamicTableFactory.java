@@ -3,12 +3,14 @@ package org.apache.flink.connector.redis.table;
 import lombok.SneakyThrows;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ReadableConfig;
+import org.apache.flink.connector.redis.table.internal.enums.CacheLoadModel;
 import org.apache.flink.connector.redis.table.internal.enums.RedisModel;
 import org.apache.flink.connector.redis.table.internal.options.RedisConnectionOptions;
 import org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions;
 import org.apache.flink.connector.redis.table.internal.options.RedisLookupOptions;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializerLoader;
+import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.connector.sink.DynamicTableSink;
 import org.apache.flink.table.connector.source.DynamicTableSource;
 import org.apache.flink.table.factories.DynamicTableSinkFactory;
@@ -20,13 +22,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
+import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.CACHE_FIELD_NAMES;
+import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.CACHE_LOAD_MODEL;
+import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.CACHE_MISS_MODEL;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.CLUSTER_CONFIG;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.COMMAND;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.DATABASE;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.HASH_KEY;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.KEY_SERIALIZER;
+import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.LIST_KEY;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.MASTER_CONFIG;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.MAX_IDLE;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.MAX_TOTAL;
@@ -67,7 +75,7 @@ public class RedisDynamicTableFactory implements DynamicTableSourceFactory, Dyna
         FactoryUtil.TableFactoryHelper helper = FactoryUtil.createTableFactoryHelper(this, context);
         ReadableConfig config = helper.getOptions();
         helper.validate();
-        validateConfigOptions(config);
+        validateConfigOptions(config, context.getCatalogTable().getResolvedSchema());
         return new RedisDynamicTableSource(
                 getRedisConnectionOptions(helper.getOptions()),
                 getRedisReadOptions(helper.getOptions()),
@@ -101,6 +109,10 @@ public class RedisDynamicTableFactory implements DynamicTableSourceFactory, Dyna
         optionalOptions.add(KEY_SERIALIZER);
         optionalOptions.add(VALUE_SERIALIZER);
         optionalOptions.add(HASH_KEY);
+        optionalOptions.add(LIST_KEY);
+        optionalOptions.add(CACHE_LOAD_MODEL);
+        optionalOptions.add(CACHE_FIELD_NAMES);
+        optionalOptions.add(CACHE_MISS_MODEL);
         return optionalOptions;
     }
 
@@ -108,11 +120,15 @@ public class RedisDynamicTableFactory implements DynamicTableSourceFactory, Dyna
     private RedisReadOptions getRedisReadOptions(ReadableConfig readableConfig) {
         String keySerializer = readableConfig.get(KEY_SERIALIZER);
         String valueSerializer = readableConfig.get(VALUE_SERIALIZER);
-        String hashKey = readableConfig.get(HASH_KEY);
         return RedisReadOptions.builder()
                 .keySerializer(RedisSerializerLoader.get(keySerializer))
                 .valueSerializer(RedisSerializerLoader.get(valueSerializer))
-                .hashKey(hashKey)
+                .command(readableConfig.get(COMMAND))
+                .hashKey(readableConfig.get(HASH_KEY))
+                .listKey(readableConfig.get(LIST_KEY))
+                .cacheLoadModel(readableConfig.get(CACHE_LOAD_MODEL))
+                .cacheFieldNames(readableConfig.get(CACHE_FIELD_NAMES))
+                .cacheMissModel(readableConfig.get(CACHE_MISS_MODEL))
                 .build();
     }
 
@@ -124,7 +140,6 @@ public class RedisDynamicTableFactory implements DynamicTableSourceFactory, Dyna
         RedisModel redisModel = readableConfig.get(MODEL);
         RedisConnectionOptions builder = RedisConnectionOptions.builder()
                 .redisModel(redisModel)
-                .command(readableConfig.get(COMMAND))
                 .timeout(readableConfig.get(TIMEOUT))
                 .maxTotal(readableConfig.get(MAX_TOTAL))
                 .maxIdle(readableConfig.get(MAX_IDLE))
@@ -183,7 +198,7 @@ public class RedisDynamicTableFactory implements DynamicTableSourceFactory, Dyna
         return build;
     }
 
-    private void validateConfigOptions(ReadableConfig config) {
+    private void validateConfigOptions(ReadableConfig config, ResolvedSchema resolvedSchema) {
 
         checkAllOrNone(config, new ConfigOption[]{MASTER_CONFIG, SLAVE_CONFIG});
 
@@ -208,6 +223,26 @@ public class RedisDynamicTableFactory implements DynamicTableSourceFactory, Dyna
                             MIN_IDLE.key(),
                             config.get(MIN_IDLE)));
         }
+
+        CacheLoadModel cacheLoadModel = config.get(CACHE_LOAD_MODEL);
+        Optional<Map<String, String>> cacheFieldNamesOptional = config.getOptional(CACHE_FIELD_NAMES);
+        if (CacheLoadModel.INITIAL.equals(cacheLoadModel)) {
+            if (!cacheFieldNamesOptional.isPresent()) {
+                throw new IllegalArgumentException(CacheLoadModel.INITIAL.name() + "模式下必须配置" + CACHE_FIELD_NAMES.key());
+            }
+            cacheFieldNamesOptional.ifPresent(cacheFieldNames -> {
+                List<String> columnNames = resolvedSchema.getColumnNames();
+                for (String value : cacheFieldNames.values()) {
+                    String[] split = value.split(",");
+                    for (String columnName : split) {
+                        if (!columnNames.contains(columnName)) {
+                            throw new IllegalArgumentException(value + "字段不存在");
+                        }
+                    }
+                }
+            });
+        }
+
     }
 
     private void checkAllOrNone(ReadableConfig config, ConfigOption<?>[] configOptions) {

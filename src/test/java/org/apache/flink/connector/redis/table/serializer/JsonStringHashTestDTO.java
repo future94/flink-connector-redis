@@ -6,7 +6,7 @@ import lombok.Data;
  * @author weilai
  */
 @Data
-public class JsonTestDTO {
+public class JsonStringHashTestDTO {
 
     private String desc;
 

@@ -9,6 +9,7 @@ import org.apache.flink.table.data.binary.BinaryStringData;
 import org.apache.flink.table.types.DataType;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -27,7 +28,7 @@ public class GetConverter extends BaseRedisCommandToRowConverter {
         return (redis, options, keys) -> {
             BinaryStringData key = (BinaryStringData) keys[0];
             final RedisSerializer<?> keySerializer = options.getKeySerializer();
-            return DataResult.builder().key(key).payload(redis.get(keySerializer.serialize(key))).build();
+            return DataResult.builder().key(key).payload(Collections.singletonList(redis.get(keySerializer.serialize(key)))).build();
         };
     }
 

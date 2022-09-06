@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
 import org.apache.flink.connector.redis.table.internal.enums.RedisModel;
 
 import java.io.Serializable;
@@ -35,8 +34,6 @@ public class RedisConnectionOptions implements Serializable {
     private List<Config> slaveConfigs;
 
     private List<Config> clusterConfigs;
-
-    private RedisCommandType command;
 
     private String password;
 

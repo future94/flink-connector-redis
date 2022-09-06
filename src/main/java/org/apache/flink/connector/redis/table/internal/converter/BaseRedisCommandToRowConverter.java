@@ -4,42 +4,170 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
+import org.apache.flink.connector.redis.table.internal.enums.CacheMissModel;
+import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
+import org.apache.flink.connector.redis.table.utils.ReflectUtil;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.binary.BinaryStringData;
 import org.apache.flink.table.types.DataType;
 
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * <p>将Redis命令返回数据转换为Table数据基础类
+ *
  * @author weilai
  */
+@Slf4j
 public abstract class BaseRedisCommandToRowConverter implements RedisCommandToRowConverter {
+
+    protected static final String DELIMITER = "~";
+
+    private final AtomicBoolean loadingCache = new AtomicBoolean(false);
+
+    protected final Map<String, GenericRowData> cache = new ConcurrentHashMap<>();
+
 
     @Override
     public Optional<GenericRowData> convert(final RedisCommand redisCommand, final List<String> columnNameList, final List<DataType> columnDataTypeList, final RedisReadOptions readOptions, final Object[] keys) throws Exception {
-        final GenericRowData rowData = new GenericRowData(columnNameList.size());
-        final RedisSerializer<?> valueSerializer = readOptions.getValueSerializer();
-        Object deserialize = null;
-        DataResult dataResult = getDataFunction().apply(redisCommand, readOptions, keys);
-        byte[] valueByte = dataResult.getPayload();
-        if (valueByte != null) {
-            deserialize = valueSerializer.deserialize(valueByte);
+        String cacheKey = genCacheKey(readOptions, keys);
+        if (StringUtils.isNotBlank(cacheKey)) {
+            GenericRowData cacheResult = cache.get(cacheKey);
+            if (cacheResult != null) {
+                return Optional.of(cacheResult);
+            }
+            if (CacheMissModel.IGNORE.equals(readOptions.getCacheMissModel())) {
+                return Optional.empty();
+            }
         }
-        if (deserialize == null) {
+        if (CacheMissModel.REFRESH.equals(readOptions.getCacheMissModel())) {
+            RedisCommandType support = this.support();
+            if (RedisCommandType.GET.equals(support) || RedisCommandType.HGET.equals(support)) {
+                return processAccurateMatch(redisCommand, columnNameList, columnDataTypeList, readOptions, keys);
+            } else if (RedisCommandType.LRANGE.equals(support)) {
+                return processFullMatch(redisCommand, columnNameList, columnDataTypeList, readOptions, keys, cacheKey);
+            }
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public void clearCache() {
+        cache.clear();
+        loadingCache.compareAndSet(true, false);
+    }
+
+    @Override
+    public void loadCache(RedisCommand redisCommand, RedisReadOptions readOptions, List<String> columnNameList, List<DataType> columnDataTypeList) throws Exception {
+        if (!loadingCache.compareAndSet(false, true)) {
+            return;
+        }
+        for (Map.Entry<String, String> entry : readOptions.getCacheFieldNames().entrySet()) {
+            String redisKey = entry.getKey();
+            log.debug("load redis cache, key : [{}]", redisKey);
+            List<byte[]> dataList = redisCommand.lrange(redisKey.getBytes(StandardCharsets.UTF_8));
+            String field = entry.getValue();
+            String[] fieldNames = field.split(",");
+            final RedisSerializer<?> valueSerializer = readOptions.getValueSerializer();
+            for (byte[] bytes : dataList) {
+                valueSerializer.deserialize(bytes);
+                Object deserialize = valueSerializer.deserialize(bytes);
+                final GenericRowData rowData = new GenericRowData(columnNameList.size());
+                dataPojo(rowData, columnNameList, columnDataTypeList, DataResult.builder().key(BinaryStringData.fromString(readOptions.getListKey())).build(), deserialize);
+                StringBuilder cacheKeyBuilder = new StringBuilder();
+                cacheKeyBuilder.append(redisKey).append(DELIMITER);
+                for (String fieldName : fieldNames) {
+                    cacheKeyBuilder.append(ReflectUtil.getFieldValue(deserialize, fieldName)).append(DELIMITER);
+                }
+                cache.put(StringUtils.removeEnd(cacheKeyBuilder.toString(), DELIMITER), rowData);
+            }
+        }
+    }
+
+    /**
+     * 全量筛选
+     */
+    private Optional<GenericRowData> processFullMatch(RedisCommand redisCommand, List<String> columnNameList, List<DataType> columnDataTypeList, RedisReadOptions readOptions, Object[] keys, String cacheKey) throws Exception {
+        final RedisSerializer<?> valueSerializer = readOptions.getValueSerializer();
+        synchronized (cache) {
+            GenericRowData genericRowData = cache.get(cacheKey);
+            if (genericRowData != null) {
+                return Optional.of(genericRowData);
+            }
+            DataResult dataResult = getDataFunction().apply(redisCommand, readOptions, keys);
+            List<byte[]> valueByte = dataResult.getPayload();
+            for (byte[] bytes : valueByte) {
+                Object deserialize = valueSerializer.deserialize(bytes);
+                final GenericRowData rowData = new GenericRowData(columnNameList.size());
+                dataPojo(rowData, columnNameList, columnDataTypeList, dataResult, deserialize);
+                cache.put(genAllCacheKey(readOptions, columnNameList, keys, deserialize), rowData);
+            }
+        }
+        GenericRowData genericRowData = cache.get(cacheKey);
+        if (genericRowData != null) {
+            return Optional.of(genericRowData);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * 精准匹配
+     */
+    private Optional<GenericRowData> processAccurateMatch(RedisCommand redisCommand, List<String> columnNameList, List<DataType> columnDataTypeList, RedisReadOptions readOptions, Object[] keys) throws Exception {
+        DataResult dataResult = getDataFunction().apply(redisCommand, readOptions, keys);
+        List<byte[]> valueByte = dataResult.getPayload();
+        if (CollectionUtils.isEmpty(valueByte) || Objects.isNull(valueByte.get(0))) {
             // 根据SQL规范，联表查询不到的时候，不返回，即字段都是null
             return Optional.empty();
-        } else if (deserialize instanceof String) {
+        }
+        final RedisSerializer<?> valueSerializer = readOptions.getValueSerializer();
+        Object deserialize;
+        // 当前查询方式只有一个
+        deserialize = valueSerializer.deserialize(valueByte.get(0));
+        final GenericRowData rowData = new GenericRowData(columnNameList.size());
+        if (deserialize instanceof String) {
             dataString(rowData, columnDataTypeList, dataResult, (String) deserialize);
-            return Optional.of(rowData);
         } else {
             dataPojo(rowData, columnNameList, columnDataTypeList, dataResult, deserialize);
-            return Optional.of(rowData);
         }
+        return Optional.of(rowData);
+    }
+
+    /**
+     * 为所有数据生成缓存key
+     *
+     * @param readOptions    读取配置
+     * @param columnNameList 维度表字段名称集合
+     * @param keys           ON的联表值
+     * @param deserialize    redis中反序列化的值
+     * @return 缓存key
+     */
+    protected String genAllCacheKey(RedisReadOptions readOptions, List<String> columnNameList, Object[] keys, Object deserialize) {
+        throw new UnsupportedOperationException("不支持为所有缓存生成hashKey");
+    }
+
+    /**
+     * 获取当前值的缓存key
+     *
+     * @param readOptions 读取配置
+     * @param keys        ON的联表值
+     * @return 缓存key，如果为null则表示不支持缓存
+     */
+    protected String genCacheKey(final RedisReadOptions readOptions, final Object[] keys) {
+        return null;
     }
 
     /**
@@ -49,29 +177,42 @@ public abstract class BaseRedisCommandToRowConverter implements RedisCommandToRo
 
     /**
      * RedisString类型的转换方式
-     * @param rowData               要返回的数据
-     * @param columnDataTypeList    字段类型集合
-     * @param dataResult            Redis返回的运行结果
-     * @param deserialize           Redis返回的运行对象
+     *
+     * @param rowData            要返回的数据
+     * @param columnDataTypeList 字段类型集合
+     * @param dataResult         Redis返回的运行结果
+     * @param deserialize        Redis返回的运行对象
      */
     protected abstract void dataString(final GenericRowData rowData, final List<DataType> columnDataTypeList, final DataResult dataResult, String deserialize);
 
     /**
      * RedisString类型的转换方式
-     * @param rowData               要返回的数据
-     * @param columnDataTypeList    字段类型集合
-     * @param dataResult            Redis返回的运行结果
-     * @param deserialize           Redis返回的运行对象
-     * @throws Exception            转换一场
+     *
+     * @param rowData            要返回的数据
+     * @param columnDataTypeList 字段类型集合
+     * @param dataResult         Redis返回的运行结果
+     * @param deserialize        Redis返回的运行对象
+     * @throws Exception 转换一场
      */
     protected abstract void dataPojo(final GenericRowData rowData, final List<String> columnNameList, final List<DataType> columnDataTypeList, final DataResult dataResult, Object deserialize) throws Exception;
 
+    protected void genRowData(GenericRowData rowData, List<String> columnNameList, List<DataType> columnDataTypeList, Object deserialize, Class<?> deserializeClass, int prePosition) throws NoSuchFieldException, IllegalAccessException {
+        for (int i = prePosition; i < columnNameList.size(); i++) {
+            String columnName = columnNameList.get(i);
+            DataType columnDataType = columnDataTypeList.get(i);
+            Field field = deserializeClass.getDeclaredField(columnName);
+            field.setAccessible(true);
+            rowData.setField(i, RedisDataToTableDataConverter.convert(columnDataType.getLogicalType(), field.get(deserialize)));
+        }
+    }
+
     /**
      * 运行Redis返回结果
-     * @param <R>       Redis运行环境
-     * @param <O>       读取参数配置
-     * @param <K>       联表key[]
-     * @param <Res>     结果
+     *
+     * @param <R>   Redis运行环境
+     * @param <O>   读取参数配置
+     * @param <K>   联表key[]
+     * @param <Res> 结果
      */
     @FunctionalInterface
     public interface DataFunction<R, O, K, Res> {
@@ -101,6 +242,6 @@ public abstract class BaseRedisCommandToRowConverter implements RedisCommandToRo
         /**
          * 查询结果
          */
-        private byte[] payload;
+        private List<byte[]> payload;
     }
 }

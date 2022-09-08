@@ -17,6 +17,11 @@ public interface RedisCommand extends Serializable {
     void connect(RedisConnectionOptions options);
 
     /**
+     * 断开链接
+     */
+    void close();
+
+    /**
      * 运行get命令
      * @param key   序列化后的键
      * @return      未序列化的值

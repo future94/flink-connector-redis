@@ -11,7 +11,7 @@ import java.lang.reflect.Field;
  * @author weilai
  */
 @Slf4j
-public class ReflectUtil {
+public class ReflectUtils {
 
     /**
      * 获取字段的值

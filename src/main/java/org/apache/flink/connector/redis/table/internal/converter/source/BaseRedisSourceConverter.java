@@ -1,4 +1,4 @@
-package org.apache.flink.connector.redis.table.internal.converter;
+package org.apache.flink.connector.redis.table.internal.converter.source;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,11 +8,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
+import org.apache.flink.connector.redis.table.internal.converter.RedisDataConverter;
 import org.apache.flink.connector.redis.table.internal.enums.CacheMissModel;
 import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
-import org.apache.flink.connector.redis.table.utils.ReflectUtil;
+import org.apache.flink.connector.redis.table.utils.ReflectUtils;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.binary.BinaryStringData;
 import org.apache.flink.table.types.DataType;
@@ -32,14 +33,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author weilai
  */
 @Slf4j
-public abstract class BaseRedisCommandToRowConverter implements RedisCommandToRowConverter {
+public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
 
     protected static final String DELIMITER = "~";
 
     private final AtomicBoolean loadingCache = new AtomicBoolean(false);
 
     protected final Map<String, GenericRowData> cache = new ConcurrentHashMap<>();
-
 
     @Override
     public Optional<GenericRowData> convert(final RedisCommand redisCommand, final List<String> columnNameList, final List<DataType> columnDataTypeList, final RedisReadOptions readOptions, final Object[] keys) throws Exception {
@@ -90,7 +90,7 @@ public abstract class BaseRedisCommandToRowConverter implements RedisCommandToRo
                 StringBuilder cacheKeyBuilder = new StringBuilder();
                 cacheKeyBuilder.append(redisKey).append(DELIMITER);
                 for (String fieldName : fieldNames) {
-                    cacheKeyBuilder.append(ReflectUtil.getFieldValue(deserialize, fieldName)).append(DELIMITER);
+                    cacheKeyBuilder.append(ReflectUtils.getFieldValue(deserialize, fieldName)).append(DELIMITER);
                 }
                 cache.put(StringUtils.removeEnd(cacheKeyBuilder.toString(), DELIMITER), rowData);
             }
@@ -173,7 +173,7 @@ public abstract class BaseRedisCommandToRowConverter implements RedisCommandToRo
     /**
      * 运行redis后返回的结果
      */
-    protected abstract DataFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction();
+    protected abstract DataSourceFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction();
 
     /**
      * RedisString类型的转换方式
@@ -192,7 +192,7 @@ public abstract class BaseRedisCommandToRowConverter implements RedisCommandToRo
      * @param columnDataTypeList 字段类型集合
      * @param dataResult         Redis返回的运行结果
      * @param deserialize        Redis返回的运行对象
-     * @throws Exception 转换一场
+     * @throws Exception         转换异常
      */
     protected abstract void dataPojo(final GenericRowData rowData, final List<String> columnNameList, final List<DataType> columnDataTypeList, final DataResult dataResult, Object deserialize) throws Exception;
 
@@ -202,7 +202,7 @@ public abstract class BaseRedisCommandToRowConverter implements RedisCommandToRo
             DataType columnDataType = columnDataTypeList.get(i);
             Field field = deserializeClass.getDeclaredField(columnName);
             field.setAccessible(true);
-            rowData.setField(i, RedisDataToTableDataConverter.convert(columnDataType.getLogicalType(), field.get(deserialize)));
+            rowData.setField(i, RedisDataConverter.from(columnDataType.getLogicalType(), field.get(deserialize)));
         }
     }
 
@@ -215,7 +215,7 @@ public abstract class BaseRedisCommandToRowConverter implements RedisCommandToRo
      * @param <Res> 结果
      */
     @FunctionalInterface
-    public interface DataFunction<R, O, K, Res> {
+    public interface DataSourceFunction<R, O, K, Res> {
 
         Res apply(R redis, O options, K keys);
     }

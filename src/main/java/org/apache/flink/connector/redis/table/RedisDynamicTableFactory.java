@@ -56,11 +56,25 @@ public class RedisDynamicTableFactory implements DynamicTableSourceFactory, Dyna
 
     @Override
     public DynamicTableSink createDynamicTableSink(Context context) {
-        return null;
+        FactoryUtil.TableFactoryHelper helper = getTableFactoryHelper(context);
+        return new RedisDynamicTableSink(
+                getRedisConnectionOptions(helper.getOptions()),
+                getRedisReadOptions(helper.getOptions()),
+                getRedisLookupOptions(helper.getOptions()),
+                context.getCatalogTable().getResolvedSchema());
     }
 
     @Override
     public DynamicTableSource createDynamicTableSource(Context context) {
+        FactoryUtil.TableFactoryHelper helper = getTableFactoryHelper(context);
+        return new RedisDynamicTableSource(
+                getRedisConnectionOptions(helper.getOptions()),
+                getRedisReadOptions(helper.getOptions()),
+                getRedisLookupOptions(helper.getOptions()),
+                context.getCatalogTable().getResolvedSchema());
+    }
+
+    private FactoryUtil.TableFactoryHelper getTableFactoryHelper(Context context) {
         String command = RedisConnectorOptions.COMMAND.key();
         if (context.getCatalogTable().getOptions().containsKey(command)) {
             context.getCatalogTable()
@@ -76,11 +90,7 @@ public class RedisDynamicTableFactory implements DynamicTableSourceFactory, Dyna
         ReadableConfig config = helper.getOptions();
         helper.validate();
         validateConfigOptions(config, context.getCatalogTable().getResolvedSchema());
-        return new RedisDynamicTableSource(
-                getRedisConnectionOptions(helper.getOptions()),
-                getRedisReadOptions(helper.getOptions()),
-                getRedisLookupOptions(helper.getOptions()),
-                context.getCatalogTable().getResolvedSchema());
+        return helper;
     }
 
     @Override

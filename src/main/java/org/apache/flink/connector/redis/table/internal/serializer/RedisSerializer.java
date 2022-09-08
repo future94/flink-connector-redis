@@ -18,12 +18,14 @@ public interface RedisSerializer<V> extends Serializable {
 
     /**
      * 序列化
+     * 当作用与key的时候，TableAPI的key是{@link BinaryStringData}类型
      */
-    byte[] serialize(BinaryStringData t) throws SerializationException;
+    byte[] serialize(Object t) throws SerializationException;
 
     /**
      * 反序列化
      */
     V deserialize(byte[] bytes) throws SerializationException;
 
+    Class<V> getValueClass();
 }

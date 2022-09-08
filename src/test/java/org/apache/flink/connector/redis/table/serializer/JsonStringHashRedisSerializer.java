@@ -2,15 +2,14 @@ package org.apache.flink.connector.redis.table.serializer;
 
 import com.google.gson.Gson;
 import org.apache.flink.connector.redis.table.internal.exception.SerializationException;
-import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
-import org.apache.flink.table.data.binary.BinaryStringData;
+import org.apache.flink.connector.redis.table.internal.serializer.BaseRedisSerializer;
 
 import java.nio.charset.StandardCharsets;
 
 /**
  * @author weilai
  */
-public class JsonStringHashRedisSerializer implements RedisSerializer<JsonStringHashTestDTO> {
+public class JsonStringHashRedisSerializer extends BaseRedisSerializer<JsonStringHashTestDTO> {
 
     private static final String IDENTIFIER = "jsonStringHash";
 
@@ -20,8 +19,8 @@ public class JsonStringHashRedisSerializer implements RedisSerializer<JsonString
     }
 
     @Override
-    public byte[] serialize(BinaryStringData t) throws SerializationException {
-        return new Gson().toJson(t.toString()).getBytes(StandardCharsets.UTF_8);
+    public byte[] serialize(Object t) throws SerializationException {
+        return new Gson().toJson(t).getBytes(StandardCharsets.UTF_8);
     }
 
     @Override

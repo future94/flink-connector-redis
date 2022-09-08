@@ -11,6 +11,7 @@ import org.apache.flink.table.connector.source.TableFunctionProvider;
 
 /**
  * <p>Redis动态表资源
+ *
  * @author weilai
  */
 public class RedisDynamicTableSource implements LookupTableSource {
@@ -19,15 +20,15 @@ public class RedisDynamicTableSource implements LookupTableSource {
     private final RedisReadOptions readOptions;
     private final RedisLookupOptions lookupOptions;
 
-    private static final String SUMMARY_STRING = "Redis";
+    private static final String SUMMARY_STRING = "redis";
 
     /**
      * {@link TableSchema}过时了
      */
     private final ResolvedSchema physicalSchema;
 
-    public RedisDynamicTableSource(RedisConnectionOptions options, RedisReadOptions readOptions, RedisLookupOptions lookupOptions, ResolvedSchema physicalSchema) {
-        this.connectionOptions = options;
+    public RedisDynamicTableSource(RedisConnectionOptions connectionOptions, RedisReadOptions readOptions, RedisLookupOptions lookupOptions, ResolvedSchema physicalSchema) {
+        this.connectionOptions = connectionOptions;
         this.readOptions = readOptions;
         this.lookupOptions = lookupOptions;
         this.physicalSchema = physicalSchema;

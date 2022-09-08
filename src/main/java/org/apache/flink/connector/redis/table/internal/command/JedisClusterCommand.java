@@ -42,6 +42,14 @@ public class JedisClusterCommand implements RedisCommand{
     }
 
     @Override
+    public void close() {
+        if (this.jedisCluster != null) {
+            this.jedisCluster.close();
+            this.jedisCluster = null;
+        }
+    }
+
+    @Override
     public byte[] get(byte[] key) {
         return sendCommand(jedisCluster -> jedisCluster.get(key));
     }

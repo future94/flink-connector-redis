@@ -4,7 +4,7 @@ import lombok.SneakyThrows;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
 import org.apache.flink.connector.redis.table.internal.command.RedisCommandBuilder;
-import org.apache.flink.connector.redis.table.internal.converter.RedisCommandToRowConverterLoader;
+import org.apache.flink.connector.redis.table.internal.converter.source.RedisSourceConverterLoader;
 import org.apache.flink.connector.redis.table.internal.enums.CacheLoadModel;
 import org.apache.flink.connector.redis.table.internal.options.RedisConnectionOptions;
 import org.apache.flink.connector.redis.table.internal.options.RedisLookupOptions;
@@ -59,7 +59,7 @@ public class RedisRowDataLookupFunction extends TableFunction<RowData> {
         }
         this.redisCommand = RedisCommandBuilder.build(connectionOptions);
         if (CacheLoadModel.INITIAL.equals(readOptions.getCacheLoadModel())) {
-            RedisCommandToRowConverterLoader.get(readOptions.getCommand()).loadCache(redisCommand, readOptions, columnNameList, columnDataTypeList);
+            RedisSourceConverterLoader.get(readOptions.getCommand()).loadCache(redisCommand, readOptions, columnNameList, columnDataTypeList);
         }
     }
 
@@ -67,6 +67,6 @@ public class RedisRowDataLookupFunction extends TableFunction<RowData> {
      * 联表的时候，on的条件有一个，这里的key[]就是几个
      */
     public void eval(Object... keys) throws Exception {
-        RedisCommandToRowConverterLoader.get(readOptions.getCommand()).convert(redisCommand, columnNameList, columnDataTypeList, readOptions, keys).ifPresent(this::collect);
+        RedisSourceConverterLoader.get(readOptions.getCommand()).convert(redisCommand, columnNameList, columnDataTypeList, readOptions, keys).ifPresent(this::collect);
     }
 }

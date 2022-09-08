@@ -1,6 +1,6 @@
 package org.apache.flink.connector.redis.table;
 
-import org.apache.flink.connector.redis.table.internal.converter.RedisCommandToRowConverterLoader;
+import org.apache.flink.connector.redis.table.internal.converter.source.RedisSourceConverterLoader;
 import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
@@ -11,12 +11,12 @@ import org.junit.Test;
 /**
  * @author weilai
  */
-public class ExampleSingleTest {
+public class ExampleSingleSourceTest {
 
     @Before
     public void clearCache() {
         for (RedisCommandType value : RedisCommandType.values()) {
-            RedisCommandToRowConverterLoader.get(value).clearCache();
+            RedisSourceConverterLoader.get(value).clearCache();
         }
     }
 
@@ -31,7 +31,7 @@ public class ExampleSingleTest {
     @Test
     public void getString() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.setParallelism(2);
+        env.setParallelism(1);
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(env);
         String dim = "create table dim_table(name varchar, login_time time(3) ) with ( " +
                 "'connector'='redis', " +

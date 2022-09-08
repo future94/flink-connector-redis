@@ -1,7 +1,8 @@
-package org.apache.flink.connector.redis.table.internal.converter;
+package org.apache.flink.connector.redis.table.internal.converter.source;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
+import org.apache.flink.connector.redis.table.internal.converter.RedisDataConverter;
 import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
@@ -18,7 +19,7 @@ import static org.apache.flink.connector.redis.table.internal.options.RedisConne
  * <p>HGET命令转换方式
  * @author weilai
  */
-public class HGetConverter extends BaseRedisCommandToRowConverter{
+public class HGetConverter extends BaseRedisSourceConverter {
 
     @Override
     public RedisCommandType support() {
@@ -26,7 +27,7 @@ public class HGetConverter extends BaseRedisCommandToRowConverter{
     }
 
     @Override
-    protected DataFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction() {
+    protected DataSourceFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction() {
         return (redis, options, keys) -> {
             final String hashKey = options.getHashKey();
             final RedisSerializer<?> keySerializer = options.getKeySerializer();
@@ -50,11 +51,11 @@ public class HGetConverter extends BaseRedisCommandToRowConverter{
     protected void dataString(GenericRowData rowData, final List<DataType> columnDataTypeList, DataResult dataResult, String deserialize) {
         if (columnDataTypeList.size() == 2) {
             rowData.setField(0, dataResult.getField());
-            rowData.setField(1, RedisDataToTableDataConverter.convert(columnDataTypeList.get(1).getLogicalType(), deserialize));
+            rowData.setField(1, RedisDataConverter.from(columnDataTypeList.get(1).getLogicalType(), deserialize));
         } else if (columnDataTypeList.size() == 3) {
             rowData.setField(0, dataResult.getKey());
             rowData.setField(1, dataResult.getField());
-            rowData.setField(2, RedisDataToTableDataConverter.convert(columnDataTypeList.get(1).getLogicalType(), deserialize));
+            rowData.setField(2, RedisDataConverter.from(columnDataTypeList.get(1).getLogicalType(), deserialize));
         } else {
             throw new RuntimeException("不正确的字段个数");
         }

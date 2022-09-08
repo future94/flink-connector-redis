@@ -8,6 +8,8 @@ public enum RedisCommandType {
 
     GET(RedisDataType.STRING, RedisOperationType.READ),
 
+    SET(RedisDataType.STRING, RedisOperationType.CREATE),
+
     HGET(RedisDataType.HASH, RedisOperationType.READ),
 
     LRANGE(RedisDataType.LIST, RedisOperationType.READ),

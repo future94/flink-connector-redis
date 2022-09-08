@@ -138,10 +138,10 @@ public interface RedisSerializer<V> extends Serializable {
 
 #### 自定义方式
 
-在`resources/META-INF/services/org.apache.flink.connector.redis.table.internal.converter.RedisCommandToRowConverter`
+在`resources/META-INF/services/org.apache.flink.connector.redis.table.internal.converter.source.RedisSourceConverter`
 文件中指定自定义类，
-该类要实现`org.apache.flink.connector.redis.table.internal.converter.RedisCommandToRowConverter`接口。
-也可以继承`org.apache.flink.connector.redis.table.internal.converter.BaseRedisCommandToRowConverter`抽象类。
+该类要实现`org.apache.flink.connector.redis.table.internal.converter.source.RedisSourceConverter`接口。
+也可以继承`org.apache.flink.connector.redis.table.internal.converter.source.BaseRedisSourceConverter`抽象类。
 
 ```java
 public interface RedisCommandToRowConverter {

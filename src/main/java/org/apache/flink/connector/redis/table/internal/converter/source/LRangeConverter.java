@@ -1,11 +1,11 @@
-package org.apache.flink.connector.redis.table.internal.converter;
+package org.apache.flink.connector.redis.table.internal.converter.source;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
 import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
-import org.apache.flink.connector.redis.table.utils.ReflectUtil;
+import org.apache.flink.connector.redis.table.utils.ReflectUtils;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.binary.BinaryStringData;
 import org.apache.flink.table.types.DataType;
@@ -20,7 +20,7 @@ import static org.apache.flink.connector.redis.table.internal.options.RedisConne
  * <p>LRANGE命令转换方式
  * @author weilai
  */
-public class LRangeConverter extends BaseRedisCommandToRowConverter{
+public class LRangeConverter extends BaseRedisSourceConverter {
 
     @Override
     public RedisCommandType support() {
@@ -28,7 +28,7 @@ public class LRangeConverter extends BaseRedisCommandToRowConverter{
     }
 
     @Override
-    protected DataFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction() {
+    protected DataSourceFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction() {
         return (redis, options, keys) -> {
             final String listKey = options.getListKey();
             final RedisSerializer<?> keySerializer = options.getKeySerializer();
@@ -67,9 +67,9 @@ public class LRangeConverter extends BaseRedisCommandToRowConverter{
         } else {
             cacheKeyBuffer = new StringBuilder(readOptions.getListKey() + DELIMITER);
         }
-        cacheKeyBuffer.append(ReflectUtil.getFieldValue(deserialize, columnNameList.get(prePosition))).append(DELIMITER);
+        cacheKeyBuffer.append(ReflectUtils.getFieldValue(deserialize, columnNameList.get(prePosition))).append(DELIMITER);
         for (int i = start; i < keys.length; i++) {
-            cacheKeyBuffer.append(ReflectUtil.getFieldValue(deserialize, columnNameList.get(i)));
+            cacheKeyBuffer.append(ReflectUtils.getFieldValue(deserialize, columnNameList.get(i)));
         }
         return StringUtils.removeEnd(cacheKeyBuffer.toString(), DELIMITER);
     }

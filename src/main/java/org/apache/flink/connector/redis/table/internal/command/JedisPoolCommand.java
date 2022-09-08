@@ -36,6 +36,14 @@ public class JedisPoolCommand implements RedisCommand{
     }
 
     @Override
+    public void close() {
+        if (jedisPool != null) {
+            jedisPool.close();
+            jedisPool = null;
+        }
+    }
+
+    @Override
     public byte[] get(byte[] key) {
         return sendCommand(jedis -> jedis.get(key));
     }

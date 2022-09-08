@@ -1,6 +1,7 @@
-package org.apache.flink.connector.redis.table.internal.converter;
+package org.apache.flink.connector.redis.table.internal.converter.source;
 
 import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
+import org.apache.flink.connector.redis.table.internal.converter.RedisDataConverter;
 import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
@@ -16,7 +17,7 @@ import java.util.List;
  * <p>GET命令转换方式
  * @author weilai
  */
-public class GetConverter extends BaseRedisCommandToRowConverter {
+public class GetConverter extends BaseRedisSourceConverter {
 
     @Override
     public RedisCommandType support() {
@@ -24,7 +25,7 @@ public class GetConverter extends BaseRedisCommandToRowConverter {
     }
 
     @Override
-    protected DataFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction() {
+    protected DataSourceFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction() {
         return (redis, options, keys) -> {
             BinaryStringData key = (BinaryStringData) keys[0];
             final RedisSerializer<?> keySerializer = options.getKeySerializer();
@@ -35,7 +36,7 @@ public class GetConverter extends BaseRedisCommandToRowConverter {
     @Override
     protected void dataString(GenericRowData rowData, final List<DataType> columnDataTypeList, DataResult dataResult, String deserialize) {
         rowData.setField(0, dataResult.getKey());
-        rowData.setField(1, RedisDataToTableDataConverter.convert(columnDataTypeList.get(1).getLogicalType(), deserialize));
+        rowData.setField(1, RedisDataConverter.from(columnDataTypeList.get(1).getLogicalType(), deserialize));
     }
 
     @Override
@@ -46,7 +47,7 @@ public class GetConverter extends BaseRedisCommandToRowConverter {
             DataType columnDataType = columnDataTypeList.get(i);
             Field field = deserialize.getClass().getDeclaredField(columnName);
             field.setAccessible(true);
-            rowData.setField(i, RedisDataToTableDataConverter.convert(columnDataType.getLogicalType(), field.get(deserialize)));
+            rowData.setField(i, RedisDataConverter.from(columnDataType.getLogicalType(), field.get(deserialize)));
         }
     }
 }

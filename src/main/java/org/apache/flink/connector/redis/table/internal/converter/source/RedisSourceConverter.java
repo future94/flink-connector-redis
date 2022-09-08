@@ -1,7 +1,7 @@
-package org.apache.flink.connector.redis.table.internal.converter;
+package org.apache.flink.connector.redis.table.internal.converter.source;
 
 import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
-import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
+import org.apache.flink.connector.redis.table.internal.converter.RedisConverter;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.types.DataType;
@@ -13,12 +13,7 @@ import java.util.Optional;
  * <p>将Redis命令返回数据转换为Table数据
  * @author weilai
  */
-public interface RedisCommandToRowConverter {
-
-    /**
-     * 支持的命令类型
-     */
-    RedisCommandType support();
+public interface RedisSourceConverter extends RedisConverter {
 
     /**
      * 转换数据

@@ -3,6 +3,7 @@ package org.apache.flink.connector.redis.table.internal.command;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.flink.connector.redis.table.internal.options.RedisConnectionOptions;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -46,6 +47,18 @@ public class JedisMasterSlaveCommand implements RedisCommand {
             this.slaveJedisPool.add(new NodePool(poolConfig, options, slaveConfig));
         }
         slaveJedisPool.forEach(node -> totalWeight += node.getEffectiveWeight());
+    }
+
+    @Override
+    public void close() {
+        if (masterJedisPool != null) {
+            masterJedisPool.close();
+            masterJedisPool = null;
+        }
+        if (CollectionUtils.isNotEmpty(slaveJedisPool)) {
+            slaveJedisPool.forEach(nodePool -> nodePool.getJedisPool().close());
+            slaveJedisPool.clear();
+        }
     }
 
     @Override

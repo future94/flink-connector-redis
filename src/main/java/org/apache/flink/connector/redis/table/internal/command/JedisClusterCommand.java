@@ -66,8 +66,23 @@ public class JedisClusterCommand implements RedisCommand{
     }
 
     @Override
+    public void hset(byte[] key, byte[] field, byte[] value) {
+        sendCommand(jedisCluster -> jedisCluster.hset(key, field, value));
+    }
+
+    @Override
     public List<byte[]> lrange(byte[] key) {
         return sendCommand(jedisCluster -> jedisCluster.lrange(key, 0, jedisCluster.llen(key)));
+    }
+
+    @Override
+    public void lpush(byte[] key, byte[] value) {
+        sendCommand(jedisCluster -> jedisCluster.lpush(key, value));
+    }
+
+    @Override
+    public void rpush(byte[] key, byte[] value) {
+        sendCommand(jedisCluster -> jedisCluster.rpush(key, value));
     }
 
     private <T> T sendCommand(Function<JedisCluster, T> function) {

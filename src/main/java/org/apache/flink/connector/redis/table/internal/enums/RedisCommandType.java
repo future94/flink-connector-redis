@@ -12,7 +12,13 @@ public enum RedisCommandType {
 
     HGET(RedisDataType.HASH, RedisOperationType.READ),
 
+    HSET(RedisDataType.HASH, RedisOperationType.CREATE),
+
     LRANGE(RedisDataType.LIST, RedisOperationType.READ),
+
+    LPUSH(RedisDataType.LIST, RedisOperationType.CREATE),
+
+    RPUSH(RedisDataType.LIST, RedisOperationType.CREATE),
     ;
 
     private final RedisDataType dataType;

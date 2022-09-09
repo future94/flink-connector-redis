@@ -13,6 +13,7 @@ import java.util.Map;
 
 /**
  * <p>TableAPI的Redis配置
+ *
  * @author weilai
  */
 @PublicEvolving
@@ -131,4 +132,33 @@ public class RedisConnectorOptions {
                     .enumType(CacheMissModel.class)
                     .defaultValue(CacheMissModel.REFRESH)
                     .withDescription("缓存未命中策略.");
+
+    public static final ConfigOption<String> SCAN =
+            ConfigOptions.key("scan")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("扫描的包路径.");
+
+    public static final ConfigOption<String> SCAN_ENTITY =
+            ConfigOptions.key("scan.entity")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("redis的实体类扫描包路径.");
+
+    public static final ConfigOption<String> SCAN_REPOSITORY =
+            ConfigOptions.key("scan.repository")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("redis数据访问层类扫描包路径.");
+    public static final ConfigOption<String> ENTITY =
+            ConfigOptions.key("entity")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("redis的实体类.");
+
+    public static final ConfigOption<String> REPOSITORY =
+            ConfigOptions.key("repository")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("redis数据访问层类.");
 }

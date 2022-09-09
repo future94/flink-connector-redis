@@ -78,8 +78,23 @@ public class JedisMasterSlaveCommand implements RedisCommand {
     }
 
     @Override
+    public void hset(byte[] key, byte[] field, byte[] value) {
+        sendCommand(jedis -> jedis.hset(key, field, value), true);
+    }
+
+    @Override
     public List<byte[]> lrange(byte[] key) {
         return sendCommand(jedis -> jedis.lrange(key, 0, jedis.llen(key)), false);
+    }
+
+    @Override
+    public void lpush(byte[] key, byte[] value) {
+        sendCommand(jedis -> jedis.lpush(key, value), true);
+    }
+
+    @Override
+    public void rpush(byte[] key, byte[] value) {
+        sendCommand(jedis -> jedis.rpush(key, value), true);
     }
 
     private <T> T sendCommand(Function<Jedis, T> function, boolean write) {

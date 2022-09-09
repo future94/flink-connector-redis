@@ -14,3 +14,6 @@
 # limitations under the License.
 
 org.apache.flink.connector.redis.table.internal.converter.sink.SetConverter
+org.apache.flink.connector.redis.table.internal.converter.sink.HSetConvert
+org.apache.flink.connector.redis.table.internal.converter.sink.LPushConverter
+org.apache.flink.connector.redis.table.internal.converter.sink.RPushConverter

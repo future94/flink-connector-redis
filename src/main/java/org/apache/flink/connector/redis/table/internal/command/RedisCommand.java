@@ -24,7 +24,7 @@ public interface RedisCommand extends Serializable {
     /**
      * 运行get命令
      * @param key   序列化后的键
-     * @return      未序列化的值
+     * @return      未反序列化的值
      */
     byte[] get(byte[] key);
 
@@ -38,15 +38,27 @@ public interface RedisCommand extends Serializable {
     /**
      * 运行hget命令
      * @param key   序列化后的键
-     * @param field 序列化后的键
-     * @return      未序列化的值
+     * @param field 序列化后的字段
+     * @return      未反序列化的值
      */
     byte[] hget(byte[] key, byte[] field);
 
     /**
+     * 运行hget命令
+     * @param key   序列化后的键
+     * @param field 序列化后的字段
+     * @param value 序列化后的值
+     */
+    void hset(byte[] key, byte[] field, byte[] value);
+
+    /**
      * 运行lrange命令
      * @param key   序列化后的键
-     * @return      未序列化的值
+     * @return      未反序列化的值
      */
     List<byte[]> lrange(byte[] key);
+
+    void lpush(byte[] key, byte[] value);
+
+    void rpush(byte[] key, byte[] value);
 }

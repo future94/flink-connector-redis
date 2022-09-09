@@ -6,15 +6,15 @@ import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
 /**
  * @author weilai
  */
-public class SetConverter extends BaseRedisSinkConverter {
+public class LPushConverter extends BaseRedisSinkConverter{
 
     @Override
     public RedisCommandType support() {
-        return RedisCommandType.SET;
+        return RedisCommandType.LPUSH;
     }
 
     @Override
     protected void doSend(RedisCommand redisCommand, DataParser dataParser) {
-        redisCommand.set(dataParser.getKey(), dataParser.getValue());
+        redisCommand.lpush(dataParser.getKey(), dataParser.getValue());
     }
 }

@@ -55,13 +55,28 @@ public class JedisPoolCommand implements RedisCommand{
     }
 
     @Override
+    public byte[] hget(byte[] key, byte[] field) {
+        return sendCommand(jedis -> jedis.hget(key, field));
+    }
+
+    @Override
+    public void hset(byte[] key, byte[] field, byte[] value) {
+        sendCommand(jedis -> jedis.hset(key, field, value));
+    }
+
+    @Override
     public List<byte[]> lrange(byte[] key) {
         return sendCommand(jedis -> jedis.lrange(key, 0, jedis.llen(key)));
     }
 
     @Override
-    public byte[] hget(byte[] key, byte[] field) {
-        return sendCommand(jedis -> jedis.hget(key, field));
+    public void lpush(byte[] key, byte[] value) {
+        sendCommand(jedis -> jedis.lpush(value));
+    }
+
+    @Override
+    public void rpush(byte[] key, byte[] value) {
+        sendCommand(jedis -> jedis.rpush(value));
     }
 
     private <T> T sendCommand(Function<Jedis, T> function) {

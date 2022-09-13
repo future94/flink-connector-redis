@@ -4,8 +4,9 @@ import lombok.SneakyThrows;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
 import org.apache.flink.connector.redis.table.internal.command.RedisCommandBuilder;
-import org.apache.flink.connector.redis.table.internal.converter.source.RedisSourceConverterLoader;
+import org.apache.flink.connector.redis.table.internal.converter.source.RedisSourceConverter;
 import org.apache.flink.connector.redis.table.internal.enums.CacheLoadModel;
+import org.apache.flink.connector.redis.table.internal.extension.ExtensionLoader;
 import org.apache.flink.connector.redis.table.internal.options.RedisConnectionOptions;
 import org.apache.flink.connector.redis.table.internal.options.RedisLookupOptions;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
@@ -59,7 +60,7 @@ public class RedisRowDataLookupFunction extends TableFunction<RowData> {
         }
         this.redisCommand = RedisCommandBuilder.build(connectionOptions);
         if (CacheLoadModel.INITIAL.equals(readOptions.getCacheLoadModel())) {
-            RedisSourceConverterLoader.get(readOptions.getCommand()).loadCache(redisCommand, readOptions, columnNameList, columnDataTypeList);
+            ExtensionLoader.getExtensionLoader(RedisSourceConverter.class).getExtension(readOptions.getCommand().identify()).loadCache(redisCommand, readOptions, columnNameList, columnDataTypeList);
         }
     }
 
@@ -67,6 +68,6 @@ public class RedisRowDataLookupFunction extends TableFunction<RowData> {
      * 联表的时候，on的条件有一个，这里的key[]就是几个
      */
     public void eval(Object... keys) throws Exception {
-        RedisSourceConverterLoader.get(readOptions.getCommand()).convert(redisCommand, columnNameList, columnDataTypeList, readOptions, keys).ifPresent(this::collect);
+        ExtensionLoader.getExtensionLoader(RedisSourceConverter.class).getExtension(readOptions.getCommand().identify()).convert(redisCommand, columnNameList, columnDataTypeList, readOptions, keys).ifPresent(this::collect);
     }
 }

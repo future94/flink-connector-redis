@@ -13,4 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-org.apache.flink.connector.redis.table.internal.serializer.StringRedisSerializer
+set=org.apache.flink.connector.redis.table.internal.converter.sink.SetConverter
+hset=org.apache.flink.connector.redis.table.internal.converter.sink.HSetConvert
+lpush=org.apache.flink.connector.redis.table.internal.converter.sink.LPushConverter
+rpush=org.apache.flink.connector.redis.table.internal.converter.sink.RPushConverter

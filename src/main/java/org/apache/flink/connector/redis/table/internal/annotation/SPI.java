@@ -10,9 +10,7 @@ import java.lang.annotation.Target;
  * @author weilai
  */
 @Documented
-@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface redisRepository {
-
-    String value();
+@Target(ElementType.TYPE)
+public @interface SPI {
 }

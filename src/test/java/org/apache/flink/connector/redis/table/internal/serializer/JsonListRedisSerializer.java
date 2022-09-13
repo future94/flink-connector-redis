@@ -1,8 +1,7 @@
-package org.apache.flink.connector.redis.table.serializer;
+package org.apache.flink.connector.redis.table.internal.serializer;
 
 import com.google.gson.Gson;
 import org.apache.flink.connector.redis.table.internal.exception.SerializationException;
-import org.apache.flink.connector.redis.table.internal.serializer.BaseRedisSerializer;
 
 import java.nio.charset.StandardCharsets;
 

@@ -26,12 +26,9 @@ public class ExampleSingleSinkTest {
                 "   'single.node'='192.168.10.14:6379', " +
                 "   'password'='password', " +
                 "   'database'='5', " +
-                "   'entity'='test', " +
                 "   'repository'='test', " +
-                "   'scan.entity'='org.apache.flink.connector.redis.table.internal.entity', " +
-                "   'scan.repository'='org.apache.flink.connector.redis.table.internal.repository', " +
                 "   'command'='set')");
-        String sql = " insert into sink_table (username, age) values ('setString', 'setValue')";
+        String sql = " insert into sink_table (username, age) values ('setString1', 'setValue1')";
         TableResult tableResult = tEnv.executeSql(sql);
         tableResult.print();
     }
@@ -53,12 +50,9 @@ public class ExampleSingleSinkTest {
                 "   'single.node'='192.168.10.14:6379', " +
                 "   'password'='password', " +
                 "   'database'='5', " +
-                "   'entity'='test', " +
-                "   'repository'='test', " +
-                "   'scan.entity'='org.apache.flink.connector.redis.table.internal.entity', " +
-                "   'scan.repository'='org.apache.flink.connector.redis.table.internal.repository', " +
-                "   'value.serializer'='jsonStringHash', " +
-                "   'command'='set')");
+                "   'repository'='testJson', " +
+                "   'value.serializer'='jsonStringHash'" +
+                ")");
         String sql = " insert into sink_table values ('setJson', '描述', '标题', 1234567)";
         TableResult tableResult = tEnv.executeSql(sql);
         tableResult.print();

@@ -1,7 +1,5 @@
 package org.apache.flink.connector.redis.table.internal.serializer;
 
-import org.apache.flink.connector.redis.table.serializer.JsonListRedisSerializer;
-import org.apache.flink.connector.redis.table.serializer.JsonListTestDTO;
 import org.junit.Test;
 
 /**

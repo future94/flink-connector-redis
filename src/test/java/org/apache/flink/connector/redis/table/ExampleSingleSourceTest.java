@@ -1,7 +1,9 @@
 package org.apache.flink.connector.redis.table;
 
-import org.apache.flink.connector.redis.table.internal.converter.source.RedisSourceConverterLoader;
+import org.apache.flink.connector.redis.table.internal.converter.source.RedisSourceConverter;
 import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
+import org.apache.flink.connector.redis.table.internal.enums.RedisOperationType;
+import org.apache.flink.connector.redis.table.internal.extension.ExtensionLoader;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
@@ -16,7 +18,10 @@ public class ExampleSingleSourceTest {
     @Before
     public void clearCache() {
         for (RedisCommandType value : RedisCommandType.values()) {
-            RedisSourceConverterLoader.get(value).clearCache();
+            if (RedisCommandType.NONE.equals(value) || !value.getOperationType().equals(RedisOperationType.READ)) {
+                continue;
+            }
+            ExtensionLoader.getExtensionLoader(RedisSourceConverter.class).getExtension(value.identify()).clearCache();
         }
     }
 

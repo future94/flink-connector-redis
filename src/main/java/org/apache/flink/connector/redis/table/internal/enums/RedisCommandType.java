@@ -1,10 +1,15 @@
 package org.apache.flink.connector.redis.table.internal.enums;
 
+import lombok.Getter;
+
 /**
  * <p>支持的Redis命令
  * @author weilai
  */
+@Getter
 public enum RedisCommandType {
+
+    NONE(null, null),
 
     GET(RedisDataType.STRING, RedisOperationType.READ),
 
@@ -28,5 +33,9 @@ public enum RedisCommandType {
     RedisCommandType(RedisDataType dataType, RedisOperationType operationType) {
         this.dataType = dataType;
         this.operationType = operationType;
+    }
+
+    public String identify() {
+        return this.name().toLowerCase();
     }
 }

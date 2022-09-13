@@ -226,7 +226,7 @@ public class ExampleSingleTest {
 在`resources/META-INF/services/org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer`文件中添加下面。
 
 ```text
-org.apache.flink.connector.redis.table.serializer.JsonListRedisSerializer
+org.apache.flink.connector.redis.table.internal.serializer.JsonListRedisSerializer
 ```
 
 ```java

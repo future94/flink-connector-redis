@@ -139,22 +139,11 @@ public class RedisConnectorOptions {
                     .noDefaultValue()
                     .withDescription("扫描的包路径.");
 
-    public static final ConfigOption<String> SCAN_ENTITY =
-            ConfigOptions.key("scan.entity")
-                    .stringType()
-                    .noDefaultValue()
-                    .withDescription("redis的实体类扫描包路径.");
-
     public static final ConfigOption<String> SCAN_REPOSITORY =
             ConfigOptions.key("scan.repository")
                     .stringType()
                     .noDefaultValue()
                     .withDescription("redis数据访问层类扫描包路径.");
-    public static final ConfigOption<String> ENTITY =
-            ConfigOptions.key("entity")
-                    .stringType()
-                    .noDefaultValue()
-                    .withDescription("redis的实体类.");
 
     public static final ConfigOption<String> REPOSITORY =
             ConfigOptions.key("repository")

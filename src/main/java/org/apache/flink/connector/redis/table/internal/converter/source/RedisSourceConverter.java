@@ -1,5 +1,6 @@
 package org.apache.flink.connector.redis.table.internal.converter.source;
 
+import org.apache.flink.connector.redis.table.internal.annotation.SPI;
 import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
 import org.apache.flink.connector.redis.table.internal.converter.RedisConverter;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
@@ -13,6 +14,7 @@ import java.util.Optional;
  * <p>将Redis命令返回数据转换为Table数据
  * @author weilai
  */
+@SPI
 public interface RedisSourceConverter extends RedisConverter {
 
     /**

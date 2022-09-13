@@ -13,5 +13,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-org.apache.flink.connector.redis.table.serializer.JsonStringHashRedisSerializer
-org.apache.flink.connector.redis.table.serializer.JsonListRedisSerializer
+string=org.apache.flink.connector.redis.table.internal.serializer.StringRedisSerializer

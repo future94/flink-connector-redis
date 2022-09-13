@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-org.apache.flink.connector.redis.table.internal.converter.sink.SetConverter
-org.apache.flink.connector.redis.table.internal.converter.sink.HSetConvert
-org.apache.flink.connector.redis.table.internal.converter.sink.LPushConverter
-org.apache.flink.connector.redis.table.internal.converter.sink.RPushConverter
+get=org.apache.flink.connector.redis.table.internal.converter.source.GetConverter
+hget=org.apache.flink.connector.redis.table.internal.converter.source.HGetConverter
+lrange=org.apache.flink.connector.redis.table.internal.converter.source.LRangeConverter

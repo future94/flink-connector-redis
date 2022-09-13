@@ -4,16 +4,16 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ReadableConfig;
-import org.apache.flink.connector.redis.table.internal.annotation.RedisEntity;
-import org.apache.flink.connector.redis.table.internal.annotation.redisRepository;
+import org.apache.flink.connector.redis.table.internal.annotation.RedisRepository;
 import org.apache.flink.connector.redis.table.internal.enums.CacheLoadModel;
 import org.apache.flink.connector.redis.table.internal.enums.RedisModel;
+import org.apache.flink.connector.redis.table.internal.extension.ExtensionLoader;
 import org.apache.flink.connector.redis.table.internal.options.RedisConnectionOptions;
 import org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions;
 import org.apache.flink.connector.redis.table.internal.options.RedisLookupOptions;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
-import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializerLoader;
-import org.apache.flink.connector.redis.table.utils.ClassUtils;
+import org.apache.flink.connector.redis.table.internal.repository.Repository;
+import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
 import org.apache.flink.connector.redis.table.utils.DefaultUtils;
 import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.connector.sink.DynamicTableSink;
@@ -37,7 +37,6 @@ import static org.apache.flink.connector.redis.table.internal.options.RedisConne
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.CLUSTER_CONFIG;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.COMMAND;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.DATABASE;
-import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.ENTITY;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.HASH_KEY;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.KEY_SERIALIZER;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.LIST_KEY;
@@ -49,7 +48,6 @@ import static org.apache.flink.connector.redis.table.internal.options.RedisConne
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.PASSWORD;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.REPOSITORY;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.SCAN;
-import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.SCAN_ENTITY;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.SCAN_REPOSITORY;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.SINGLE_CONFIG;
 import static org.apache.flink.connector.redis.table.internal.options.RedisConnectorOptions.SLAVE_CONFIG;
@@ -113,13 +111,13 @@ public class RedisDynamicTableFactory implements DynamicTableSourceFactory, Dyna
     public Set<ConfigOption<?>> requiredOptions() {
         Set<ConfigOption<?>> requiredOptions = new HashSet<>();
         requiredOptions.add(MODEL);
-        requiredOptions.add(COMMAND);
         return requiredOptions;
     }
 
     @Override
     public Set<ConfigOption<?>> optionalOptions() {
         Set<ConfigOption<?>> optionalOptions = new HashSet<>();
+        optionalOptions.add(COMMAND);
         optionalOptions.add(SINGLE_CONFIG);
         optionalOptions.add(MASTER_CONFIG);
         optionalOptions.add(SLAVE_CONFIG);
@@ -135,32 +133,27 @@ public class RedisDynamicTableFactory implements DynamicTableSourceFactory, Dyna
         optionalOptions.add(CACHE_FIELD_NAMES);
         optionalOptions.add(CACHE_MISS_MODEL);
         optionalOptions.add(SCAN);
-        optionalOptions.add(SCAN_ENTITY);
         optionalOptions.add(SCAN_REPOSITORY);
-        optionalOptions.add(ENTITY);
         optionalOptions.add(REPOSITORY);
         return optionalOptions;
     }
 
     @SneakyThrows
+    @SuppressWarnings("unchecked")
     private RedisReadOptions getRedisReadOptions(ReadableConfig readableConfig) {
         String keySerializer = readableConfig.get(KEY_SERIALIZER);
         String valueSerializer = readableConfig.get(VALUE_SERIALIZER);
-        String entityName = readableConfig.get(ENTITY);
         String repositoryName = readableConfig.get(REPOSITORY);
-        Class<?> entityClass = null;
-        Class<?> repositoryClass = null;
-        if (StringUtils.isNotBlank(entityName) && StringUtils.isNotBlank(repositoryName)) {
+        Repository<?> repository = null;
+        if (StringUtils.isNotBlank(repositoryName)) {
             readableConfig.get(SCAN);
-            entityClass = ClassUtils.scanClassOne(DefaultUtils.get(() -> readableConfig.get(SCAN_ENTITY), () -> readableConfig.get(SCAN)), RedisEntity.class, (anno -> ((RedisEntity) anno).value().equals(entityName)), () -> entityName + "获取失败");
-//            repositoryClass = ClassUtils.scanClassOne(DefaultUtils.get(() -> readableConfig.get(SCAN_REPOSITORY), () -> readableConfig.get(SCAN)), redisRepository.class, (anno -> ((redisRepository) anno).value().equals(repositoryName)), () -> repositoryName + "获取失败");
+            repository = ExtensionLoader.getExtensionLoader(Repository.class).getExtension(repositoryName, DefaultUtils.get(() -> readableConfig.get(SCAN_REPOSITORY), () -> readableConfig.get(SCAN)), RedisRepository.class);
         }
         return RedisReadOptions.builder()
-                .keySerializer(RedisSerializerLoader.get(keySerializer))
-                .valueSerializer(RedisSerializerLoader.get(valueSerializer))
+                .keySerializer(ExtensionLoader.getExtensionLoader(RedisSerializer.class).getExtension(keySerializer))
+                .valueSerializer(ExtensionLoader.getExtensionLoader(RedisSerializer.class).getExtension(valueSerializer))
                 .command(readableConfig.get(COMMAND))
-                .entity(entityClass)
-                .repository(repositoryClass)
+                .repository(repository)
                 .hashKey(readableConfig.get(HASH_KEY))
                 .listKey(readableConfig.get(LIST_KEY))
                 .cacheLoadModel(readableConfig.get(CACHE_LOAD_MODEL))
@@ -238,8 +231,6 @@ public class RedisDynamicTableFactory implements DynamicTableSourceFactory, Dyna
     private void validateConfigOptions(ReadableConfig config, ResolvedSchema resolvedSchema) {
 
         checkAllOrNone(config, new ConfigOption[]{MASTER_CONFIG, SLAVE_CONFIG});
-
-        checkAllOrNone(config, new ConfigOption[]{ENTITY, REPOSITORY});
 
         if (config.get(MAX_TOTAL) < 0) {
             throw new IllegalArgumentException(

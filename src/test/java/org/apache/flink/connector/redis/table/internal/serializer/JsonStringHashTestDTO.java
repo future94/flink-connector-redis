@@ -1,4 +1,4 @@
-package org.apache.flink.connector.redis.table.serializer;
+package org.apache.flink.connector.redis.table.internal.serializer;
 
 import lombok.Data;
 

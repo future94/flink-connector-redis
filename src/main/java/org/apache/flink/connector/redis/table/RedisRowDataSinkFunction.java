@@ -2,12 +2,10 @@ package org.apache.flink.connector.redis.table;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
-import org.apache.flink.connector.redis.table.internal.command.RedisCommandBuilder;
-import org.apache.flink.connector.redis.table.internal.converter.sink.RedisSinkConverterLoader;
 import org.apache.flink.connector.redis.table.internal.options.RedisConnectionOptions;
 import org.apache.flink.connector.redis.table.internal.options.RedisLookupOptions;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
+import org.apache.flink.connector.redis.table.internal.repository.Repository;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.data.RowData;
@@ -40,7 +38,7 @@ public class RedisRowDataSinkFunction extends RichSinkFunction<RowData> {
     /**
      * Redis运行环境
      */
-    private RedisCommand redisCommand;
+    private Repository<?> repository;
 
     public RedisRowDataSinkFunction(RedisConnectionOptions connectionOptions, RedisReadOptions readOptions, RedisLookupOptions lookupOptions, ResolvedSchema physicalSchema) {
         this.connectionOptions = connectionOptions;
@@ -55,8 +53,9 @@ public class RedisRowDataSinkFunction extends RichSinkFunction<RowData> {
 
     @Override
     public void open(Configuration parameters) throws Exception {
-        this.redisCommand = RedisCommandBuilder.build(connectionOptions);
-        this.redisCommand.connect(connectionOptions);
+        Repository<?> repository = readOptions.getRepository();
+        repository.init(connectionOptions, readOptions, columnNameList, columnDataTypeList);
+        this.repository = repository;
     }
 
     @Override
@@ -64,11 +63,13 @@ public class RedisRowDataSinkFunction extends RichSinkFunction<RowData> {
         RowKind kind = rowData.getRowKind();
         switch (kind) {
             case INSERT:
-                RedisSinkConverterLoader.get(readOptions.getCommand()).convert(redisCommand, readOptions, columnNameList, columnDataTypeList, rowData);
+                repository.insert(rowData);
                 break;
             case UPDATE_AFTER:
+                repository.update(rowData);
                 break;
             case DELETE:
+                repository.delete(rowData);
                 break;
             case UPDATE_BEFORE:
                 break;
@@ -79,6 +80,6 @@ public class RedisRowDataSinkFunction extends RichSinkFunction<RowData> {
 
     @Override
     public void close() throws Exception {
-        Optional.ofNullable(redisCommand).ifPresent(RedisCommand::close);
+        Optional.ofNullable(repository).ifPresent(Repository::close);
     }
 }

@@ -1,6 +1,7 @@
 package org.apache.flink.connector.redis.table.internal.converter.sink;
 
 import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
+import org.apache.flink.connector.redis.table.internal.converter.DataParser;
 import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
 
 /**

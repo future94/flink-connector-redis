@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.apache.flink.connector.redis.table.internal.enums.CacheLoadModel;
 import org.apache.flink.connector.redis.table.internal.enums.CacheMissModel;
 import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
+import org.apache.flink.connector.redis.table.internal.repository.Repository;
 import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
 
 import java.io.Serializable;
@@ -32,13 +33,9 @@ public class RedisReadOptions implements Serializable {
 
     private String scan;
 
-    private String entityScan;
-
     private String repositoryScan;
 
-    private Class<?> entity;
-
-    private Class<?> repository;
+    private Repository<?> repository;
 
     private String hashKey;
 

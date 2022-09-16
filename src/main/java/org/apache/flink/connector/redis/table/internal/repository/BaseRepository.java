@@ -20,23 +20,22 @@ import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.DataType;
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 /**
  * @author weilai
  */
 @Slf4j
+@SuppressWarnings({"unchecked", "rawtypes"})
 public abstract class BaseRepository<T> implements Repository<T> {
 
     protected Class<T> entityClass;
 
-    private RedisSerializer<?> keySerializer;
+    private RedisSerializer<String> keySerializer;
 
-    private RedisSerializer<T> valueSerializer;
+    private RedisSerializer<? super Object> valueSerializer;
 
     private RedisCommand redisCommand;
 
@@ -48,11 +47,12 @@ public abstract class BaseRepository<T> implements Repository<T> {
 
     private RedisSinkConverter deleteConverter;
 
+    private RedisReadOptions readOptions;
+
     private List<String> columnNameList;
 
     private List<DataType> columnDataTypeList;
 
-    @SuppressWarnings("unchecked")
     public BaseRepository() {
         entityClass = (Class<T>) ((ParameterizedTypeImpl) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
     }
@@ -61,20 +61,21 @@ public abstract class BaseRepository<T> implements Repository<T> {
     public void init(RedisConnectionOptions connectionOptions, RedisReadOptions readOptions, List<String> columnNameList, List<DataType> columnDataTypeList) {
         this.redisCommand = RedisCommandBuilder.build(connectionOptions);
         this.redisCommand.connect(connectionOptions);
+        this.readOptions = readOptions;
         this.columnNameList = columnNameList;
         this.columnDataTypeList = columnDataTypeList;
         this.selectConverter = getConverter(selectCommand());
         this.insertConverter = getConverter(insertCommand());
         this.updateConverter = getConverter(updateCommand());
         this.deleteConverter = getConverter(deleteCommand());
-        this.keySerializer = getKeySerializer(readOptions);
-        this.valueSerializer = getValueSerializer(readOptions);
+        this.keySerializer = getKeySerializer();
+        this.valueSerializer = getValueSerializer();
     }
 
     @SneakyThrows
-    private RedisSerializer<T> getKeySerializer(RedisReadOptions readOptions) {
+    private RedisSerializer<String> getKeySerializer(RedisReadOptions readOptions) {
         RedisRepository redisRepository = getClass().getAnnotation(RedisRepository.class);
-        RedisSerializer<?> serializer;
+        RedisSerializer<String> serializer;
         if (redisRepository != null && redisRepository.keySerializer() != null) {
             serializer = redisRepository.keySerializer().newInstance();
         } else {
@@ -83,7 +84,7 @@ public abstract class BaseRepository<T> implements Repository<T> {
         if (serializer == null) {
             throw new IllegalArgumentException("Key Serializer不存在");
         }
-        return (RedisSerializer<T>) serializer;
+        return serializer;
     }
 
     @SneakyThrows
@@ -145,6 +146,14 @@ public abstract class BaseRepository<T> implements Repository<T> {
         }
     }
 
+    protected RedisSerializer<String> getKeySerializer() {
+        return getKeySerializer(readOptions);
+    }
+
+    protected RedisSerializer getValueSerializer() {
+        return getValueSerializer(readOptions);
+    }
+
     protected RedisCommandType selectCommand() {
         RedisRepository redisRepository = getClass().getAnnotation(RedisRepository.class);
         if (redisRepository != null && !redisRepository.selectCommand().equals(RedisCommandType.NONE)) {
@@ -180,29 +189,49 @@ public abstract class BaseRepository<T> implements Repository<T> {
     @SneakyThrows
     protected DataParser parser(RowData rowData) {
         DataParser dataParser = new DataParser();
+        T value = entityClass.newInstance();
         for (Field field : entityClass.getDeclaredFields()) {
+            if ("serialVersionUID".equals(field.getName())) {
+                continue;
+            }
             field.setAccessible(true);
-            extracted(RedisKey.class, columnNameList, columnDataTypeList, rowData, field, keySerializer, dataParser::setKey);
-            extracted(RedisField.class, columnNameList, columnDataTypeList, rowData, field, keySerializer, dataParser::setField);
-            extracted(RedisValue.class, columnNameList, columnDataTypeList, rowData, field, valueSerializer, dataParser::setValue);
-        }
-        Object value = entityClass.newInstance();
-        for (Field field : entityClass.getDeclaredFields()) {
-            field.setAccessible(true);
+            if (dataParser.getKey() == null) {
+                RedisKey redisKey = field.getAnnotation(RedisKey.class);
+                if (redisKey != null) {
+                    int pos = columnNameList.indexOf(field.getName());
+                    if (pos != -1) {
+                        dataParser.setKey(keySerializer.serialize(RedisDataConverter.to(columnDataTypeList.get(pos).getLogicalType(), rowData, pos).toString()));
+                        continue;
+                    }
+                }
+            }
+            if (dataParser.getField() == null) {
+                RedisField redisField = field.getAnnotation(RedisField.class);
+                if (redisField != null) {
+                    int pos = columnNameList.indexOf(field.getName());
+                    if (pos != -1) {
+                        dataParser.setField(keySerializer.serialize(RedisDataConverter.to(columnDataTypeList.get(pos).getLogicalType(), rowData, pos).toString()));
+                        continue;
+                    }
+                }
+            }
+            if (dataParser.getValue() == null) {
+                RedisValue redisValue = field.getAnnotation(RedisValue.class);
+                if (redisValue != null) {
+                    int pos = columnNameList.indexOf(field.getName());
+                    if (pos != -1) {
+                        dataParser.setValue(valueSerializer.serialize(RedisDataConverter.to(columnDataTypeList.get(pos).getLogicalType(), rowData, pos)));
+                        continue;
+                    }
+                }
+            }
             int pos = columnNameList.indexOf(field.getName());
             Object fieldValue = RedisDataConverter.to(columnDataTypeList.get(pos).getLogicalType(), rowData, pos);
             field.set(value, fieldValue);
         }
-        dataParser.setValue(valueSerializer.serialize(value));
-        return dataParser;
-    }
-
-    private <A extends Annotation> void extracted(Class<A> annotationClass, List<String> columnNameList, List<DataType> columnDataTypeList, RowData rowData, Field field, RedisSerializer<?> serializer, Consumer<byte[]> consumer) {
-        if (field.getAnnotation(annotationClass) != null) {
-            int pos = columnNameList.indexOf(field.getName());
-            if (pos != -1) {
-                consumer.accept(serializer.serialize(RedisDataConverter.to(columnDataTypeList.get(pos).getLogicalType(), rowData, pos)));
-            }
+        if (dataParser.getValue() == null) {
+            dataParser.setValue(valueSerializer.serialize(value));
         }
+        return dataParser;
     }
 }

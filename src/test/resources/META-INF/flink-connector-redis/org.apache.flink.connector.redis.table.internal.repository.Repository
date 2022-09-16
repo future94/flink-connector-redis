@@ -16,3 +16,4 @@
 string=org.apache.flink.connector.redis.table.internal.repository.StringSPIRepository
 test=org.apache.flink.connector.redis.table.internal.repository.TestRepository
 testJson=org.apache.flink.connector.redis.table.internal.repository.TestJsonRepository
+rpush=org.apache.flink.connector.redis.table.internal.repository.RPushTestRepository

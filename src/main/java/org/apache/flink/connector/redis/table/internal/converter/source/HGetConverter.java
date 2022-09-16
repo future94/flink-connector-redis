@@ -7,7 +7,6 @@ import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
 import org.apache.flink.table.data.GenericRowData;
-import org.apache.flink.table.data.binary.BinaryStringData;
 import org.apache.flink.table.types.DataType;
 
 import java.util.Collections;
@@ -30,18 +29,18 @@ public class HGetConverter extends BaseRedisSourceConverter {
     protected DataSourceFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction() {
         return (redis, options, keys) -> {
             final String hashKey = options.getHashKey();
-            final RedisSerializer<?> keySerializer = options.getKeySerializer();
-            BinaryStringData key;
-            BinaryStringData field;
+            final RedisSerializer<String> keySerializer = options.getKeySerializer();
+            String key;
+            String field;
             if (StringUtils.isBlank(hashKey)) {
                 if (keys.length != 2) {
                     throw new RuntimeException("hget联表查询ON条件数量错误，您可以指定" + HASH_KEY.key() + "配置或者传递正确的条件");
                 }
-                key = (BinaryStringData) keys[0];
-                field = (BinaryStringData) keys[1];
+                key = keys[0].toString();
+                field = keys[1].toString();
             } else {
-                key = BinaryStringData.fromString(hashKey);
-                field = (BinaryStringData) keys[0];
+                key = hashKey;
+                field = keys[0].toString();
             }
             return DataResult.builder().key(key).field(field).payload(Collections.singletonList(redis.hget(keySerializer.serialize(key), keySerializer.serialize(field)))).build();
         };

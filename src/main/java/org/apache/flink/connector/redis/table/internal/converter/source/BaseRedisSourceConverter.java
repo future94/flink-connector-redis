@@ -15,7 +15,6 @@ import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
 import org.apache.flink.connector.redis.table.utils.ReflectUtils;
 import org.apache.flink.table.data.GenericRowData;
-import org.apache.flink.table.data.binary.BinaryStringData;
 import org.apache.flink.table.types.DataType;
 
 import java.lang.reflect.Field;
@@ -86,7 +85,7 @@ public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
                 valueSerializer.deserialize(bytes);
                 Object deserialize = valueSerializer.deserialize(bytes);
                 final GenericRowData rowData = new GenericRowData(columnNameList.size());
-                dataPojo(rowData, columnNameList, columnDataTypeList, DataResult.builder().key(BinaryStringData.fromString(readOptions.getListKey())).build(), deserialize);
+                dataPojo(rowData, columnNameList, columnDataTypeList, DataResult.builder().key(readOptions.getListKey()).build(), deserialize);
                 StringBuilder cacheKeyBuilder = new StringBuilder();
                 cacheKeyBuilder.append(redisKey).append(DELIMITER);
                 for (String fieldName : fieldNames) {
@@ -232,12 +231,12 @@ public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
         /**
          * key
          */
-        private BinaryStringData key;
+        private String key;
 
         /**
          * hash field
          */
-        private BinaryStringData field;
+        private String field;
 
         /**
          * 查询结果

@@ -13,13 +13,8 @@ public class StringRedisSerializer extends BaseRedisSerializer<String>{
     public static final String IDENTIFIER = "string";
 
     @Override
-    public String identifier() {
-        return IDENTIFIER;
-    }
-
-    @Override
-    public byte[] serialize(Object data) throws SerializationException {
-        return data.toString().getBytes(StandardCharsets.UTF_8);
+    public byte[] serialize(String data) throws SerializationException {
+        return data.getBytes(StandardCharsets.UTF_8);
     }
 
     @Override

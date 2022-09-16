@@ -39,13 +39,9 @@ public class JsonRedisSerializer<V> extends BaseRedisSerializer<V> {
         super();
     }
 
+    @SuppressWarnings("unchecked")
     public JsonRedisSerializer(Class<?> clazz) {
         super((Class<V>) clazz);
-    }
-
-    @Override
-    public String identifier() {
-        return IDENTIFIER;
     }
 
     @Override

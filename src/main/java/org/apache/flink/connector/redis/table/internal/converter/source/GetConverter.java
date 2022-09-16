@@ -28,8 +28,8 @@ public class GetConverter extends BaseRedisSourceConverter {
     protected DataSourceFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction() {
         return (redis, options, keys) -> {
             BinaryStringData key = (BinaryStringData) keys[0];
-            final RedisSerializer<?> keySerializer = options.getKeySerializer();
-            return DataResult.builder().key(key).payload(Collections.singletonList(redis.get(keySerializer.serialize(key)))).build();
+            final RedisSerializer<String> keySerializer = options.getKeySerializer();
+            return DataResult.builder().key(key.toString()).payload(Collections.singletonList(redis.get(keySerializer.serialize(key.toString())))).build();
         };
     }
 

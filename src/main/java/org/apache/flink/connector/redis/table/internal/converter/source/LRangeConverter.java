@@ -7,7 +7,6 @@ import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
 import org.apache.flink.connector.redis.table.utils.ReflectUtils;
 import org.apache.flink.table.data.GenericRowData;
-import org.apache.flink.table.data.binary.BinaryStringData;
 import org.apache.flink.table.types.DataType;
 
 import java.util.Arrays;
@@ -31,8 +30,8 @@ public class LRangeConverter extends BaseRedisSourceConverter {
     protected DataSourceFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction() {
         return (redis, options, keys) -> {
             final String listKey = options.getListKey();
-            final RedisSerializer<?> keySerializer = options.getKeySerializer();
-            BinaryStringData key;
+            final RedisSerializer<String> keySerializer = options.getKeySerializer();
+            String key;
             if (StringUtils.isBlank(listKey)) {
                 if (keys.length < 1) {
                     throw new RuntimeException("lrange联表查询ON条件数量错误，您可以指定" + LIST_KEY.key() + "配置或者传递正确的条件");
@@ -40,9 +39,9 @@ public class LRangeConverter extends BaseRedisSourceConverter {
                 if (keys.length < 2) {
                     throw new RuntimeException("lrange联表查询除了key外，请ON再至少指定一个ON条件来进行维度查询");
                 }
-                key = (BinaryStringData) keys[0];
+                key = keys[0].toString();
             } else {
-                key = BinaryStringData.fromString(listKey);
+                key = listKey;
                 if (keys.length < 1) {
                     throw new IllegalArgumentException("lrange联表请至少指定一个ON条件来进行维度查询");
                 }

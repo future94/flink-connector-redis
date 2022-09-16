@@ -71,12 +71,12 @@ public class JedisPoolCommand implements RedisCommand{
 
     @Override
     public void lpush(byte[] key, byte[] value) {
-        sendCommand(jedis -> jedis.lpush(value));
+        sendCommand(jedis -> jedis.lpush(key, value));
     }
 
     @Override
     public void rpush(byte[] key, byte[] value) {
-        sendCommand(jedis -> jedis.rpush(value));
+        sendCommand(jedis -> jedis.rpush(key, value));
     }
 
     private <T> T sendCommand(Function<Jedis, T> function) {

@@ -10,15 +10,8 @@ import java.nio.charset.StandardCharsets;
  */
 public class JsonStringHashRedisSerializer extends BaseRedisSerializer<JsonStringHashTestDTO> {
 
-    private static final String IDENTIFIER = "jsonStringHash";
-
     @Override
-    public String identifier() {
-        return IDENTIFIER;
-    }
-
-    @Override
-    public byte[] serialize(Object t) throws SerializationException {
+    public byte[] serialize(JsonStringHashTestDTO t) throws SerializationException {
         return new Gson().toJson(t).getBytes(StandardCharsets.UTF_8);
     }
 

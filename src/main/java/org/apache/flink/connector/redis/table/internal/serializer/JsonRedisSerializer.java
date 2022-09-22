@@ -16,7 +16,7 @@ import java.util.Objects;
  */
 public class JsonRedisSerializer<V> extends BaseRedisSerializer<V> {
 
-    private static final String IDENTIFIER = "json";
+    public static final String IDENTIFIER = "json";
 
     private static final Gson gson;
 

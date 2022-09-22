@@ -13,7 +13,6 @@ import org.apache.flink.connector.redis.table.internal.options.RedisConnectorOpt
 import org.apache.flink.connector.redis.table.internal.options.RedisLookupOptions;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.connector.redis.table.internal.repository.Repository;
-import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
 import org.apache.flink.connector.redis.table.utils.DefaultUtils;
 import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.connector.sink.DynamicTableSink;
@@ -150,8 +149,8 @@ public class RedisDynamicTableFactory implements DynamicTableSourceFactory, Dyna
             repository = ExtensionLoader.getExtensionLoader(Repository.class).getExtension(repositoryName, DefaultUtils.get(() -> readableConfig.get(SCAN_REPOSITORY), () -> readableConfig.get(SCAN)), RedisRepository.class);
         }
         return RedisReadOptions.builder()
-                .keySerializer(ExtensionLoader.getExtensionLoader(RedisSerializer.class).getExtension(keySerializer))
-                .valueSerializer(ExtensionLoader.getExtensionLoader(RedisSerializer.class).getExtension(valueSerializer))
+                .keySerializer(keySerializer)
+                .valueSerializer(valueSerializer)
                 .command(readableConfig.get(COMMAND))
                 .repository(repository)
                 .hashKey(readableConfig.get(HASH_KEY))

@@ -11,7 +11,7 @@ import java.io.ObjectOutputStream;
 /**
  * @author weilai
  */
-public class ObjectRedisSerializer<V> extends BaseRedisSerializer<V> {
+public class ObjectRedisSerializer extends BaseRedisSerializer<Object> {
 
     public static final String IDENTIFIER = "object";
 
@@ -19,13 +19,8 @@ public class ObjectRedisSerializer<V> extends BaseRedisSerializer<V> {
         super();
     }
 
-    @SuppressWarnings("unchecked")
-    public ObjectRedisSerializer(Class<?> clazz) {
-        super((Class<V>) clazz);
-    }
-
     @Override
-    public byte[] serialize(V object) throws SerializationException {
+    public byte[] serialize(Object object) throws SerializationException {
         try {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
@@ -37,11 +32,11 @@ public class ObjectRedisSerializer<V> extends BaseRedisSerializer<V> {
     }
 
     @Override
-    public V deserialize(byte[] bytes) throws SerializationException {
+    public Object deserialize(byte[] bytes) throws SerializationException {
         try {
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
             ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
-            return (V) objectInputStream.readObject();
+            return objectInputStream.readObject();
         } catch (Exception e) {
             throw new SerializationException("反序列化失败", e);
         }

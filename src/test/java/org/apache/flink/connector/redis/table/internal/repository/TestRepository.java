@@ -8,6 +8,6 @@ import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
  * @author weilai
  */
 @RedisRepository(insertCommand = RedisCommandType.SET)
-public class TestRepository extends BaseRepository<TestEntity>{
+public class TestRepository extends EntityRepository<TestEntity> {
 
 }

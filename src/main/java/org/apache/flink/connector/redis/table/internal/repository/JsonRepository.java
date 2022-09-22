@@ -6,7 +6,7 @@ import org.apache.flink.connector.redis.table.internal.serializer.RedisSerialize
 /**
  * @author weilai
  */
-public abstract class JsonRepository<T> extends BaseRepository<T> {
+public abstract class JsonRepository<T> extends EntityRepository<T> {
 
     @Override
     protected RedisSerializer<T> getValueSerializer() {

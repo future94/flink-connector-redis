@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
 import org.apache.flink.connector.redis.table.internal.converter.RedisDataConverter;
 import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
+import org.apache.flink.connector.redis.table.internal.function.DataFunction;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
 import org.apache.flink.table.data.GenericRowData;
@@ -26,10 +27,10 @@ public class HGetConverter extends BaseRedisSourceConverter {
     }
 
     @Override
-    protected DataSourceFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction() {
+    protected DataFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction() {
         return (redis, options, keys) -> {
             final String hashKey = options.getHashKey();
-            final RedisSerializer<String> keySerializer = options.getKeySerializer();
+            final RedisSerializer<String> keySerializer = getKeySerializer(options);
             String key;
             String field;
             if (StringUtils.isBlank(hashKey)) {

@@ -25,9 +25,9 @@ public class RedisReadOptions implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private RedisSerializer<String> keySerializer;
+    private String keySerializer;
 
-    private RedisSerializer<?> valueSerializer;
+    private String valueSerializer;
 
     private RedisCommandType command;
 

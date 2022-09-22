@@ -13,6 +13,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-string=org.apache.flink.connector.redis.table.internal.serializer.StringRedisSerializer
-json=org.apache.flink.connector.redis.table.internal.serializer.JsonRedisSerializer
-object=org.apache.flink.connector.redis.table.internal.serializer.ObjectRedisSerializer
+index=org.apache.flink.connector.redis.table.internal.repository.IndexRepository

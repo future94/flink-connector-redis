@@ -7,6 +7,8 @@ import org.apache.flink.connector.redis.table.internal.enums.CacheLoadModel;
 import org.apache.flink.connector.redis.table.internal.enums.CacheMissModel;
 import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
 import org.apache.flink.connector.redis.table.internal.enums.RedisModel;
+import org.apache.flink.connector.redis.table.internal.repository.IndexRepository;
+import org.apache.flink.connector.redis.table.internal.serializer.ObjectRedisSerializer;
 import org.apache.flink.connector.redis.table.internal.serializer.StringRedisSerializer;
 
 import java.util.Map;
@@ -100,7 +102,7 @@ public class RedisConnectorOptions {
     public static final ConfigOption<String> VALUE_SERIALIZER =
             ConfigOptions.key("value.serializer")
                     .stringType()
-                    .defaultValue(StringRedisSerializer.IDENTIFIER)
+                    .defaultValue(ObjectRedisSerializer.IDENTIFIER)
                     .withDescription("redis的value编解码器.");
 
     public static final ConfigOption<String> HASH_KEY =
@@ -148,6 +150,6 @@ public class RedisConnectorOptions {
     public static final ConfigOption<String> REPOSITORY =
             ConfigOptions.key("repository")
                     .stringType()
-                    .noDefaultValue()
+                    .defaultValue(IndexRepository.IDENTIFIER)
                     .withDescription("redis数据访问层类.");
 }

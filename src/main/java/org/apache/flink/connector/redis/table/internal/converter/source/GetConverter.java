@@ -3,6 +3,7 @@ package org.apache.flink.connector.redis.table.internal.converter.source;
 import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
 import org.apache.flink.connector.redis.table.internal.converter.RedisDataConverter;
 import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
+import org.apache.flink.connector.redis.table.internal.function.DataFunction;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
 import org.apache.flink.table.data.GenericRowData;
@@ -25,10 +26,10 @@ public class GetConverter extends BaseRedisSourceConverter {
     }
 
     @Override
-    protected DataSourceFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction() {
+    protected DataFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction() {
         return (redis, options, keys) -> {
             BinaryStringData key = (BinaryStringData) keys[0];
-            final RedisSerializer<String> keySerializer = options.getKeySerializer();
+            final RedisSerializer<String> keySerializer = getKeySerializer(options);
             return DataResult.builder().key(key.toString()).payload(Collections.singletonList(redis.get(keySerializer.serialize(key.toString())))).build();
         };
     }

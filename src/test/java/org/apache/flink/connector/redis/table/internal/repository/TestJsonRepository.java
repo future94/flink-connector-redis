@@ -8,7 +8,7 @@ import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
  * @author weilai
  */
 @RedisRepository
-public class TestJsonRepository extends BaseRepository<TestJsonEntity>{
+public class TestJsonRepository extends EntityRepository<TestJsonEntity> {
 
     @Override
     protected RedisCommandType insertCommand() {

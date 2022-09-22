@@ -3,6 +3,7 @@ package org.apache.flink.connector.redis.table.internal.converter.source;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
 import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
+import org.apache.flink.connector.redis.table.internal.function.DataFunction;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
 import org.apache.flink.connector.redis.table.utils.ReflectUtils;
@@ -27,10 +28,10 @@ public class LRangeConverter extends BaseRedisSourceConverter {
     }
 
     @Override
-    protected DataSourceFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction() {
+    protected DataFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction() {
         return (redis, options, keys) -> {
             final String listKey = options.getListKey();
-            final RedisSerializer<String> keySerializer = options.getKeySerializer();
+            final RedisSerializer<String> keySerializer = getKeySerializer(options);
             String key;
             if (StringUtils.isBlank(listKey)) {
                 if (keys.length < 1) {

@@ -8,7 +8,7 @@ import org.junit.Test;
 /**
  * @author weilai
  */
-public class BaseRepositoryTest {
+public class EntityRepositoryTest {
 
     @Test
     public void insertCommand() {
@@ -17,7 +17,7 @@ public class BaseRepositoryTest {
     }
 
     @RedisRepository(value = "test", insertCommand = RedisCommandType.HSET)
-    static class TestRepository extends BaseRepository<String> {
+    static class TestRepository extends EntityRepository<String> {
 
     }
 }

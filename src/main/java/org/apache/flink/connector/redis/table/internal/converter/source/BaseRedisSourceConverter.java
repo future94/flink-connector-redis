@@ -11,6 +11,8 @@ import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
 import org.apache.flink.connector.redis.table.internal.converter.RedisDataConverter;
 import org.apache.flink.connector.redis.table.internal.enums.CacheMissModel;
 import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
+import org.apache.flink.connector.redis.table.internal.extension.ExtensionLoader;
+import org.apache.flink.connector.redis.table.internal.function.DataFunction;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
 import org.apache.flink.connector.redis.table.utils.ReflectUtils;
@@ -35,6 +37,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
 
     protected static final String DELIMITER = "~";
+
+    protected RedisSerializer<String> keySerializer;
+
+    protected RedisSerializer<?> valueSerializer;
 
     private final AtomicBoolean loadingCache = new AtomicBoolean(false);
 
@@ -80,7 +86,7 @@ public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
             List<byte[]> dataList = redisCommand.lrange(redisKey.getBytes(StandardCharsets.UTF_8));
             String field = entry.getValue();
             String[] fieldNames = field.split(",");
-            final RedisSerializer<?> valueSerializer = readOptions.getValueSerializer();
+            final RedisSerializer<?> valueSerializer = getValueSerializer(readOptions);
             for (byte[] bytes : dataList) {
                 valueSerializer.deserialize(bytes);
                 Object deserialize = valueSerializer.deserialize(bytes);
@@ -100,7 +106,7 @@ public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
      * 全量筛选
      */
     private Optional<GenericRowData> processFullMatch(RedisCommand redisCommand, List<String> columnNameList, List<DataType> columnDataTypeList, RedisReadOptions readOptions, Object[] keys, String cacheKey) throws Exception {
-        final RedisSerializer<?> valueSerializer = readOptions.getValueSerializer();
+        final RedisSerializer<?> valueSerializer = getValueSerializer(readOptions);
         synchronized (cache) {
             GenericRowData genericRowData = cache.get(cacheKey);
             if (genericRowData != null) {
@@ -132,7 +138,7 @@ public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
             // 根据SQL规范，联表查询不到的时候，不返回，即字段都是null
             return Optional.empty();
         }
-        final RedisSerializer<?> valueSerializer = readOptions.getValueSerializer();
+        final RedisSerializer<?> valueSerializer = getValueSerializer(readOptions);
         Object deserialize;
         // 当前查询方式只有一个
         deserialize = valueSerializer.deserialize(valueByte.get(0));
@@ -143,6 +149,20 @@ public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
             dataPojo(rowData, columnNameList, columnDataTypeList, dataResult, deserialize);
         }
         return Optional.of(rowData);
+    }
+
+    protected RedisSerializer<String> getKeySerializer(RedisReadOptions readOptions) {
+        if (keySerializer == null) {
+            keySerializer = ExtensionLoader.getExtensionLoader(RedisSerializer.class).getExtension(readOptions.getKeySerializer());
+        }
+        return keySerializer;
+    }
+
+    protected RedisSerializer<?> getValueSerializer(RedisReadOptions readOptions) {
+        if (valueSerializer == null) {
+            valueSerializer = ExtensionLoader.getExtensionLoader(RedisSerializer.class).getExtension(readOptions.getKeySerializer());
+        }
+        return valueSerializer;
     }
 
     /**
@@ -172,7 +192,7 @@ public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
     /**
      * 运行redis后返回的结果
      */
-    protected abstract DataSourceFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction();
+    protected abstract DataFunction<RedisCommand, RedisReadOptions, Object[], DataResult> getDataFunction();
 
     /**
      * RedisString类型的转换方式
@@ -203,20 +223,6 @@ public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
             field.setAccessible(true);
             rowData.setField(i, RedisDataConverter.from(columnDataType.getLogicalType(), field.get(deserialize)));
         }
-    }
-
-    /**
-     * 运行Redis返回结果
-     *
-     * @param <R>   Redis运行环境
-     * @param <O>   读取参数配置
-     * @param <K>   联表key[]
-     * @param <Res> 结果
-     */
-    @FunctionalInterface
-    public interface DataSourceFunction<R, O, K, Res> {
-
-        Res apply(R redis, O options, K keys);
     }
 
     /**

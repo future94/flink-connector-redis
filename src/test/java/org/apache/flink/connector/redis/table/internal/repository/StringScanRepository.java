@@ -6,5 +6,5 @@ import org.apache.flink.connector.redis.table.internal.annotation.RedisRepositor
  * @author weilai
  */
 @RedisRepository("scan")
-public class StringScanRepository extends BaseRepository<String>{
+public class StringScanRepository extends EntityRepository<String> {
 }

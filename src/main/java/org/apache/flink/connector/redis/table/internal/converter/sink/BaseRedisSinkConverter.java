@@ -8,6 +8,8 @@ import org.apache.flink.connector.redis.table.internal.converter.DataParser;
  */
 public abstract class BaseRedisSinkConverter implements RedisSinkConverter {
 
+    private static final long serialVersionUID = 1L;
+
     @Override
     public void convert(final RedisCommand redisCommand, final DataParser dataParser) {
         doSend(redisCommand, dataParser);

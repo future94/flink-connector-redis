@@ -17,6 +17,7 @@ public class ExampleSingleSourceTest {
 
     @Before
     public void clearCache() {
+        System.out.println("clearCache");
         for (RedisCommandType value : RedisCommandType.values()) {
             if (RedisCommandType.NONE.equals(value) || !value.getOperationType().equals(RedisOperationType.READ)) {
                 continue;
@@ -70,7 +71,7 @@ public class ExampleSingleSourceTest {
     @Test
     public void getJson() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.setParallelism(2);
+        env.setParallelism(1);
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(env);
         String dim = "create table dim_table(" +
                 "name varchar, title varchar, login_time time(3), desc varchar ) with ( " +
@@ -148,6 +149,7 @@ public class ExampleSingleSourceTest {
                 "'password'='password', " +
                 "'database'='5', " +
                 "'command'='hget', " +
+                "'value.serializer'='string'," +
                 "'hash.key' = '45')";
         String source =
                 "create table source_table(username varchar, level varchar, proctime as procTime()) "
@@ -211,7 +213,7 @@ public class ExampleSingleSourceTest {
     @Test
     public void hGetJsonHasHashKey() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.setParallelism(2);
+        env.setParallelism(1);
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(env);
         String dim = "create table dim_table(name varchar, level varchar, title varchar, login_time time(3), desc varchar) with ( " +
                 "'connector'='redis', " +
@@ -281,39 +283,6 @@ public class ExampleSingleSourceTest {
         env.setParallelism(1);
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(env);
         String dim = "create table dim_table(name varchar, level varchar, title varchar, login_time time(3), desc varchar) with ( " +
-                "'connector'='redis', " +
-                "'model'='single', " +
-                "'single.node'='192.168.10.14:6379', " +
-                "'password'='password', " +
-                "'database'='5', " +
-                "'list.key'='listTest', " +
-                "'value.serializer'='jsonList'," +
-                "'cache.miss'='refresh'," +
-                "'command'='lrange')";
-        String source = "create table source_table(username varchar, level varchar, proctime as procTime()) "
-                + "with ('connector'='datagen',  'rows-per-second'='1', "
-                + "'fields.username.kind'='sequence',  'fields.username.start'='85',  'fields.username.end'='87',"
-                + "'fields.level.kind'='sequence',  'fields.level.start'='95',  'fields.level.end'='97'"
-                + ")";
-        tEnv.executeSql(source);
-        tEnv.executeSql(dim);
-        String sql = " select s.username, s.level, d.login_time, d.level, d.desc, d.title from source_table s"
-                + "  left join dim_table for system_time as of s.proctime as d "
-                + " on d.level = s.level";
-        Table table = tEnv.sqlQuery(sql);
-        tEnv.toDataStream(table).print();
-        env.execute("hGetStringHasHashKey");
-    }
-
-    /**
-     * 设置key，有一个ON条件，表中没有key字段
-     */
-    @Test
-    public void lRangeJson2() throws Exception {
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.setParallelism(1);
-        StreamTableEnvironment tEnv = StreamTableEnvironment.create(env);
-        String dim = "create table dim_table(level varchar, title varchar, login_time time(3), desc varchar) with ( " +
                 "'connector'='redis', " +
                 "'model'='single', " +
                 "'single.node'='192.168.10.14:6379', " +
@@ -436,5 +405,38 @@ public class ExampleSingleSourceTest {
         Table table = tEnv.sqlQuery(sql);
         tEnv.toDataStream(table).print();
         env.execute("lRangeJson3");
+    }
+
+    /**
+     * 设置key，有一个ON条件，表中没有key字段
+     */
+    @Test
+    public void lRangeJson2() throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(1);
+        StreamTableEnvironment tEnv = StreamTableEnvironment.create(env);
+        String dim = "create table dim_table(level varchar, title varchar, login_time time(3), desc varchar) with ( " +
+                "'connector'='redis', " +
+                "'model'='single', " +
+                "'single.node'='192.168.10.14:6379', " +
+                "'password'='password', " +
+                "'database'='5', " +
+                "'list.key'='listTest', " +
+                "'value.serializer'='jsonList'," +
+                "'cache.miss'='refresh'," +
+                "'command'='lrange')";
+        String source = "create table source_table(username varchar, level varchar, proctime as procTime()) "
+                + "with ('connector'='datagen',  'rows-per-second'='1', "
+                + "'fields.username.kind'='sequence',  'fields.username.start'='105',  'fields.username.end'='107',"
+                + "'fields.level.kind'='sequence',  'fields.level.start'='115',  'fields.level.end'='117'"
+                + ")";
+        tEnv.executeSql(source);
+        tEnv.executeSql(dim);
+        String sql = " select s.username, s.level, d.login_time, d.level, d.desc, d.title from source_table s"
+                + "  left join dim_table for system_time as of s.proctime as d "
+                + " on d.level = s.level";
+        Table table = tEnv.sqlQuery(sql);
+        tEnv.toDataStream(table).print();
+        env.execute("lRangeJson2");
     }
 }

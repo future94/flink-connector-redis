@@ -36,13 +36,13 @@ public class GetConverter extends BaseRedisSourceConverter {
 
     @Override
     protected void dataString(GenericRowData rowData, final List<DataType> columnDataTypeList, DataResult dataResult, String deserialize) {
-        rowData.setField(0, dataResult.getKey());
+        rowData.setField(0, RedisDataConverter.from(columnDataTypeList.get(0).getLogicalType(), dataResult.getKey()));
         rowData.setField(1, RedisDataConverter.from(columnDataTypeList.get(1).getLogicalType(), deserialize));
     }
 
     @Override
     protected void dataPojo(GenericRowData rowData, List<String> columnNameList, List<DataType> columnDataTypeList, DataResult dataResult, Object deserialize) throws Exception{
-        rowData.setField(0, dataResult.getKey());
+        rowData.setField(0, RedisDataConverter.from(columnDataTypeList.get(0).getLogicalType(), dataResult.getKey()));
         for (int i = 1; i < columnNameList.size(); i++) {
             String columnName = columnNameList.get(i);
             DataType columnDataType = columnDataTypeList.get(i);

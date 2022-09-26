@@ -16,7 +16,7 @@ public class EntityRepositoryTest {
         Assert.assertEquals(repository.insertCommand(), RedisCommandType.HSET);
     }
 
-    @RedisRepository(value = "test", insertCommand = RedisCommandType.HSET)
+    @RedisRepository(value = "insertCommand", insertCommand = RedisCommandType.HSET)
     static class TestRepository extends EntityRepository<String> {
 
     }

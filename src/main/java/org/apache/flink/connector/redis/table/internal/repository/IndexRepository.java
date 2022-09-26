@@ -1,6 +1,7 @@
 package org.apache.flink.connector.redis.table.internal.repository;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.redis.table.internal.converter.DataParser;
 import org.apache.flink.connector.redis.table.internal.converter.RedisDataConverter;
 import org.apache.flink.connector.redis.table.internal.converter.sink.RedisSinkConverter;
@@ -14,17 +15,20 @@ import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
 import org.apache.flink.connector.redis.table.internal.serializer.JsonRedisSerializer;
 import org.apache.flink.connector.redis.table.internal.serializer.RedisSerializer;
 import org.apache.flink.connector.redis.table.utils.ClassUtils;
+import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.DataType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * @author weilai
  */
+@Slf4j
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class IndexRepository extends BaseRepository<RowData> {
 
@@ -56,6 +60,31 @@ public class IndexRepository extends BaseRepository<RowData> {
     @Override
     public List<RowData> list() {
         return null;
+    }
+
+
+    @Override
+    public Optional<GenericRowData> join(Object... keys) throws Exception {
+        checkNotNull(sourceConverter, "No sourceConverter supplied.");
+        return sourceConverter.convert(redisCommand, columnNameList, columnDataTypeList, readOptions, keys);
+    }
+
+    @Override
+    public void loadCache() throws Exception {
+        if (sourceConverter != null) {
+            sourceConverter.loadCache(redisCommand, readOptions, columnNameList, columnDataTypeList);
+        } else {
+            log.warn("sourceConverter未初始化");
+        }
+    }
+
+    @Override
+    public void clearCache(){
+        if (sourceConverter != null) {
+            sourceConverter.clearCache();
+        } else {
+            log.warn("sourceConverter未初始化");
+        }
     }
 
     @Override

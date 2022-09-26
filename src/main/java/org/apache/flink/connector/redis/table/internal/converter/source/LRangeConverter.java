@@ -2,6 +2,7 @@ package org.apache.flink.connector.redis.table.internal.converter.source;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
+import org.apache.flink.connector.redis.table.internal.converter.RedisDataConverter;
 import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
 import org.apache.flink.connector.redis.table.internal.function.DataFunction;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
@@ -98,7 +99,7 @@ public class LRangeConverter extends BaseRedisSourceConverter {
         if (prePosition == 0) {
             // 没有key和field信息
         } else if (prePosition == 1) {
-            rowData.setField(0, dataResult.getKey());
+            rowData.setField(0, RedisDataConverter.from(columnDataTypeList.get(0).getLogicalType(), dataResult.getKey()));
         } else {
             throw new RuntimeException("不正确的字段个数");
         }

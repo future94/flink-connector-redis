@@ -81,4 +81,77 @@ public class IndexRepositoryTest {
         TableResult tableResult = tEnv.executeSql(sql);
         tableResult.print();
     }
+
+    @Test
+    public void insertHSetIndexSimple() {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(1);
+        StreamTableEnvironment tEnv = StreamTableEnvironment.create(env);
+        tEnv.executeSql("" +
+                "create table sink_table (" +
+                "   username varchar, " +
+                "   age varchar," +
+                "   level varchar" +
+                ") with (" +
+                "   'connector'='redis', " +
+                "   'model'='single', " +
+                "   'single.node'='192.168.10.14:6379', " +
+                "   'password'='password', " +
+                "   'value.serializer'='string', " +
+                "   'database'='5', " +
+                "   'command'='hset')");
+        String sql = " insert into sink_table (username, age, level) values ('insertHSetIndexSimple', 'setValue1', 'level1')";
+        TableResult tableResult = tEnv.executeSql(sql);
+        tableResult.print();
+    }
+
+    @Test
+    public void insertHSetIndexJson() {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(1);
+        StreamTableEnvironment tEnv = StreamTableEnvironment.create(env);
+        tEnv.executeSql("" +
+                "create table sink_table (" +
+                "   username varchar, " +
+                "   age varchar," +
+                "   level varchar," +
+                "   login_time varchar," +
+                "   mobile varchar" +
+                ") with (" +
+                "   'connector'='redis', " +
+                "   'model'='single', " +
+                "   'single.node'='192.168.10.14:6379', " +
+                "   'password'='password', " +
+                "   'value.serializer'='json', " +
+                "   'database'='5', " +
+                "   'command'='hset')");
+        String sql = " insert into sink_table (username, age, level, login_time, mobile) values ('insertHSetIndexJson', 'setValue1', 'level1', '123', '186')";
+        TableResult tableResult = tEnv.executeSql(sql);
+        tableResult.print();
+    }
+
+    @Test
+    public void insertHSetIndexObject() {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(1);
+        StreamTableEnvironment tEnv = StreamTableEnvironment.create(env);
+        tEnv.executeSql("" +
+                "create table sink_table (" +
+                "   username varchar, " +
+                "   age varchar," +
+                "   level varchar," +
+                "   login_time varchar," +
+                "   mobile varchar" +
+                ") with (" +
+                "   'connector'='redis', " +
+                "   'model'='single', " +
+                "   'single.node'='192.168.10.14:6379', " +
+                "   'password'='password', " +
+                "   'value.serializer'='object', " +
+                "   'database'='5', " +
+                "   'command'='hset')");
+        String sql = " insert into sink_table (username, age, level, login_time, mobile) values ('insertHSetIndexObject', 'setValue1', 'level1', '123', '186')";
+        TableResult tableResult = tEnv.executeSql(sql);
+        tableResult.print();
+    }
 }

@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.flink.calcite.shaded.com.google.common.cache.Cache;
+import org.apache.flink.calcite.shaded.com.google.common.cache.CacheBuilder;
 import org.apache.flink.connector.redis.table.internal.command.RedisCommand;
 import org.apache.flink.connector.redis.table.internal.converter.RedisDataConverter;
 import org.apache.flink.connector.redis.table.internal.enums.CacheMissModel;
@@ -25,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -38,19 +39,15 @@ public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
 
     protected static final String DELIMITER = "~";
 
-    protected RedisSerializer<String> keySerializer;
-
-    protected RedisSerializer<?> valueSerializer;
-
     private final AtomicBoolean loadingCache = new AtomicBoolean(false);
 
-    protected final Map<String, GenericRowData> cache = new ConcurrentHashMap<>();
+    protected final Cache<String, Object> cache = CacheBuilder.newBuilder().build();
 
     @Override
     public Optional<GenericRowData> convert(final RedisCommand redisCommand, final List<String> columnNameList, final List<DataType> columnDataTypeList, final RedisReadOptions readOptions, final Object[] keys) throws Exception {
         String cacheKey = genCacheKey(readOptions, keys);
         if (StringUtils.isNotBlank(cacheKey)) {
-            GenericRowData cacheResult = cache.get(cacheKey);
+            GenericRowData cacheResult = (GenericRowData) cache.getIfPresent(cacheKey);
             if (cacheResult != null) {
                 return Optional.of(cacheResult);
             }
@@ -71,7 +68,7 @@ public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
 
     @Override
     public void clearCache() {
-        cache.clear();
+        cache.cleanUp();
         loadingCache.compareAndSet(true, false);
     }
 
@@ -91,7 +88,7 @@ public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
                 valueSerializer.deserialize(bytes);
                 Object deserialize = valueSerializer.deserialize(bytes);
                 final GenericRowData rowData = new GenericRowData(columnNameList.size());
-                dataPojo(rowData, columnNameList, columnDataTypeList, DataResult.builder().key(readOptions.getListKey()).build(), deserialize);
+                dataPojo(rowData, columnNameList, columnDataTypeList, DataResult.builder().key(redisKey).build(), deserialize);
                 StringBuilder cacheKeyBuilder = new StringBuilder();
                 cacheKeyBuilder.append(redisKey).append(DELIMITER);
                 for (String fieldName : fieldNames) {
@@ -108,7 +105,7 @@ public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
     private Optional<GenericRowData> processFullMatch(RedisCommand redisCommand, List<String> columnNameList, List<DataType> columnDataTypeList, RedisReadOptions readOptions, Object[] keys, String cacheKey) throws Exception {
         final RedisSerializer<?> valueSerializer = getValueSerializer(readOptions);
         synchronized (cache) {
-            GenericRowData genericRowData = cache.get(cacheKey);
+            GenericRowData genericRowData = (GenericRowData) cache.getIfPresent(cacheKey);
             if (genericRowData != null) {
                 return Optional.of(genericRowData);
             }
@@ -121,7 +118,7 @@ public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
                 cache.put(genAllCacheKey(readOptions, columnNameList, keys, deserialize), rowData);
             }
         }
-        GenericRowData genericRowData = cache.get(cacheKey);
+        GenericRowData genericRowData = (GenericRowData) cache.getIfPresent(cacheKey);
         if (genericRowData != null) {
             return Optional.of(genericRowData);
         }
@@ -152,17 +149,11 @@ public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
     }
 
     protected RedisSerializer<String> getKeySerializer(RedisReadOptions readOptions) {
-        if (keySerializer == null) {
-            keySerializer = ExtensionLoader.getExtensionLoader(RedisSerializer.class).getExtension(readOptions.getKeySerializer());
-        }
-        return keySerializer;
+        return ExtensionLoader.getExtensionLoader(RedisSerializer.class).getExtension(readOptions.getKeySerializer());
     }
 
     protected RedisSerializer<?> getValueSerializer(RedisReadOptions readOptions) {
-        if (valueSerializer == null) {
-            valueSerializer = ExtensionLoader.getExtensionLoader(RedisSerializer.class).getExtension(readOptions.getKeySerializer());
-        }
-        return valueSerializer;
+        return ExtensionLoader.getExtensionLoader(RedisSerializer.class).getExtension(readOptions.getValueSerializer());
     }
 
     /**
@@ -211,7 +202,7 @@ public abstract class BaseRedisSourceConverter implements RedisSourceConverter {
      * @param columnDataTypeList 字段类型集合
      * @param dataResult         Redis返回的运行结果
      * @param deserialize        Redis返回的运行对象
-     * @throws Exception         转换异常
+     * @throws Exception 转换异常
      */
     protected abstract void dataPojo(final GenericRowData rowData, final List<String> columnNameList, final List<DataType> columnDataTypeList, final DataResult dataResult, Object deserialize) throws Exception;
 

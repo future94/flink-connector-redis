@@ -9,15 +9,18 @@ import org.apache.flink.connector.redis.table.internal.annotation.RedisValue;
 import org.apache.flink.connector.redis.table.internal.converter.DataParser;
 import org.apache.flink.connector.redis.table.internal.converter.RedisDataConverter;
 import org.apache.flink.connector.redis.table.internal.converter.sink.RedisSinkConverter;
+import org.apache.flink.connector.redis.table.internal.converter.source.RedisSourceConverter;
 import org.apache.flink.connector.redis.table.internal.enums.RedisCommandType;
 import org.apache.flink.connector.redis.table.internal.options.RedisConnectionOptions;
 import org.apache.flink.connector.redis.table.internal.options.RedisReadOptions;
+import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.DataType;
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author weilai
@@ -27,7 +30,7 @@ import java.util.List;
 public abstract class EntityRepository<T> extends BaseRepository<T> {
 
     // TODO
-    private RedisSinkConverter selectConverter;
+    private RedisSourceConverter selectConverter;
 
     private RedisSinkConverter insertConverter;
 
@@ -43,7 +46,7 @@ public abstract class EntityRepository<T> extends BaseRepository<T> {
     public void init(RedisConnectionOptions connectionOptions, RedisReadOptions readOptions, List<String> columnNameList, List<DataType> columnDataTypeList) {
         super.init(connectionOptions, readOptions, columnNameList, columnDataTypeList);
         // TODO
-        this.selectConverter = getSinkConverter(selectCommand());
+        this.selectConverter = getSourceConverter(selectCommand());
         this.insertConverter = getSinkConverter(insertCommand());
         this.updateConverter = getSinkConverter(updateCommand());
         this.deleteConverter = getSinkConverter(deleteCommand());
@@ -53,6 +56,16 @@ public abstract class EntityRepository<T> extends BaseRepository<T> {
     @Override
     public List<T> list() {
         return null;
+    }
+
+    @Override
+    public Optional<GenericRowData> join(Object... keys) throws Exception {
+        return selectConverter.convert(redisCommand, columnNameList, columnDataTypeList, readOptions, keys);
+    }
+
+    @Override
+    public void loadCache() throws Exception {
+        selectConverter.loadCache(redisCommand, readOptions, columnNameList, columnDataTypeList);
     }
 
     @Override

@@ -50,12 +50,12 @@ public class HGetConverter extends BaseRedisSourceConverter {
     @Override
     protected void dataString(GenericRowData rowData, final List<DataType> columnDataTypeList, DataResult dataResult, String deserialize) {
         if (columnDataTypeList.size() == 2) {
-            rowData.setField(0, dataResult.getField());
+            rowData.setField(0, RedisDataConverter.from(columnDataTypeList.get(0).getLogicalType(), dataResult.getField()));
             rowData.setField(1, RedisDataConverter.from(columnDataTypeList.get(1).getLogicalType(), deserialize));
         } else if (columnDataTypeList.size() == 3) {
-            rowData.setField(0, dataResult.getKey());
-            rowData.setField(1, dataResult.getField());
-            rowData.setField(2, RedisDataConverter.from(columnDataTypeList.get(1).getLogicalType(), deserialize));
+            rowData.setField(0, RedisDataConverter.from(columnDataTypeList.get(0).getLogicalType(), dataResult.getKey()));
+            rowData.setField(1, RedisDataConverter.from(columnDataTypeList.get(1).getLogicalType(), dataResult.getField()));
+            rowData.setField(2, RedisDataConverter.from(columnDataTypeList.get(2).getLogicalType(), deserialize));
         } else {
             throw new RuntimeException("不正确的字段个数");
         }
@@ -68,10 +68,10 @@ public class HGetConverter extends BaseRedisSourceConverter {
         if (prePosition == 0) {
             // 没有key和field信息
         } else if (prePosition == 1) {
-            rowData.setField(0, dataResult.getField());
+            rowData.setField(0, RedisDataConverter.from(columnDataTypeList.get(0).getLogicalType(), dataResult.getField()));
         } else if (prePosition == 2) {
-            rowData.setField(0, dataResult.getKey());
-            rowData.setField(1, dataResult.getField());
+            rowData.setField(0, RedisDataConverter.from(columnDataTypeList.get(0).getLogicalType(), dataResult.getKey()));
+            rowData.setField(1, RedisDataConverter.from(columnDataTypeList.get(1).getLogicalType(), dataResult.getField()));
         } else {
             throw new RuntimeException("不正确的字段个数");
         }

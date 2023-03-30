@@ -25,12 +25,6 @@
 
 [![Stargazers over time](https://starchart.cc/future94/flink-connector-redis.svg)](https://starchart.cc/future94/flink-connector-redis.svg)
 
-## 为什么写这个项目
-
-对比其他的`flink-connector-redis`
-，基本上已经停止维护或者使用不是很方便，因公司也要使用，所以写这个项目。目前还在快速开发中，并且会持续更新中。如果您有什么需要暂时还不支持，可以提交[issues](https://github.com/future94/flink-connector-redis/issues)
-.
-
 ---
 
 # Features
